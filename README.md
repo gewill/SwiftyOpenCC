@@ -38,19 +38,27 @@ converter.convert(str)
 
 2. Checkout new version, like `v1.1.7`
 
-3. Copy  all `./OpenCC/build/perf/data/*.ocd2`  files to `./Sources/OpenCC/Dictionary/`
+3. Make OpenCC
 
    ```shell
+    cd OpenCC
+    make
+   ```
+
+4. Copy  all `./OpenCC/build/perf/data/*.ocd2`  files to `./Sources/OpenCC/Dictionary/`
+
+   ```shell
+   cd ..
    cp ./OpenCC/build/perf/data/*.ocd2 ./Sources/OpenCC/Dictionary/
    ```
 
-4. Copy `./OpenCC/build/perf/src/opencc_config.h` to `./OpenCC/src/opencc_config.h`
+6. Copy `./OpenCC/build/perf/src/opencc_config.h` to `./OpenCC/src/opencc_config.h`
 
    ```shell
    cp ./OpenCC/build/perf/src/opencc_config.h ./OpenCC/src/opencc_config.h
    ```
 
-5. Run test in Xcode: `Cmd+U`
+7. Run test in Xcode: `Cmd+U`
 
 ## License
 
