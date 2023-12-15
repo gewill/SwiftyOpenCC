@@ -59,6 +59,7 @@ let package = Package(
                 "src/TestUtilsUTF8.hpp",
                 "src/TextDictTestBase.hpp",
                 "src/py_opencc.cpp",
+                "src/opencc_config.h",
                 
                 // ???
                 "src/README.md",

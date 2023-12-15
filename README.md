@@ -28,6 +28,30 @@ converter.convert(str)
 
 [Github Pages](http://ddddxxx.github.io/SwiftyOpenCC) (100% Documented)
 
+## Build you own
+
+1. Install requirements
+
+    ```shell
+    brew install cmake doxygen
+    ```
+
+2. Checkout new version, like `v1.1.7`
+
+3. Copy  all `./OpenCC/build/perf/data/*.ocd2`  files to `./Sources/OpenCC/Dictionary/`
+
+   ```shell
+   cp ./OpenCC/build/perf/data/*.ocd2 ./Sources/OpenCC/Dictionary/
+   ```
+
+4. Copy `./OpenCC/build/perf/src/opencc_config.h` to `./OpenCC/src/opencc_config.h`
+
+   ```shell
+   cp ./OpenCC/build/perf/src/opencc_config.h ./OpenCC/src/opencc_config.h
+   ```
+
+5. Run test in Xcode: `Cmd+U`
+
 ## License
 
 SwiftyOpenCC is available under the MIT license. See the [LICENSE file](LICENSE).
