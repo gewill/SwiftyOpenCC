@@ -45,20 +45,20 @@ converter.convert(str)
     make
    ```
 
-4. Copy  all `./OpenCC/build/perf/data/*.ocd2`  files to `./Sources/OpenCC/Dictionary/`
+4. Copy  all `./OpenCC/build/rel/data/*.ocd2`  files to `./Sources/OpenCC/Dictionary/`
 
    ```shell
    cd ..
-   cp ./OpenCC/build/perf/data/*.ocd2 ./Sources/OpenCC/Dictionary/
+   cp ./OpenCC/build/rel/data/*.ocd2 ./Sources/OpenCC/Dictionary/
    ```
 
-6. Copy `./OpenCC/build/perf/src/opencc_config.h` to `./OpenCC/src/opencc_config.h`
+5. Copy `./OpenCC/build/rel/src/opencc_config.h` to `./OpenCC/src/opencc_config.h`
 
    ```shell
-   cp ./OpenCC/build/perf/src/opencc_config.h ./OpenCC/src/opencc_config.h
+   cp ./OpenCC/build/rel/src/opencc_config.h ./OpenCC/src/opencc_config.h
    ```
 
-7. Run test in Xcode: `Cmd+U`
+6. Run test in Xcode: `Cmd+U`
 
 ## License
 

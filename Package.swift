@@ -77,7 +77,7 @@ let package = Package(
             cxxSettings: [
                 .headerSearchPath("src"),
                 .headerSearchPath("configure"),
-                .headerSearchPath("deps/darts-clone"),
+                .headerSearchPath("deps/darts-clone-0.32"),
                 .headerSearchPath("deps/marisa-0.2.6/include"),
                 .headerSearchPath("deps/marisa-0.2.6/lib"),
                 .define("OPENCC_ENABLE_DARTS"),
