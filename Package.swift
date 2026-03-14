@@ -44,12 +44,13 @@ let package = Package(
                 "src/TextDictTest.cpp",
                 "src/UTF8StringSliceTest.cpp",
                 "src/UTF8UtilTest.cpp",
+                "src/LexiconAnnotationTest.cpp",
                 "deps/google-benchmark",
-                "deps/gtest-1.12.1",
-                "deps/pybind11-2.10.0",
+                "deps/googletest-1.15.0",
+                "deps/pybind11-2.13.1",
                 "deps/rapidjson-1.1.0",
-                "deps/tclap-1.2.2",
-                
+                "deps/tclap-1.2.5",
+
                 "src/CmdLineOutput.hpp",
                 "src/Config.hpp",
                 "src/ConfigTestBase.hpp",
@@ -60,10 +61,13 @@ let package = Package(
                 "src/TextDictTestBase.hpp",
                 "src/py_opencc.cpp",
                 "src/opencc_config.h",
-                
+                "src/opencc_config.h.in",
+
                 // ???
                 "src/README.md",
                 "src/CMakeLists.txt",
+                "src/BUILD.bazel",
+                "src/BUILD",
                 "deps/marisa-0.2.6/AUTHORS",
                 "deps/marisa-0.2.6/CMakeLists.txt",
                 "deps/marisa-0.2.6/COPYING.md",

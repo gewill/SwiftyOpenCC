@@ -12,26 +12,79 @@ let testCases: [(String, ChineseConverter.Options)] = [
     ("tw2sp", [.simplify, .twStandard, .twIdiom]),
 ]
 
+struct TestCase: Decodable {
+    let id: String
+    let input: String
+    let expected: [String: String]
+}
+
+struct TestCasesFile: Decodable {
+    let cases: [TestCase]
+}
+
 class OpenCCTests: XCTestCase {
-    
+
     func converter(option: ChineseConverter.Options) throws -> ChineseConverter {
         return try ChineseConverter(options: option)
     }
-    
+
     func testConversion() throws {
-        func testCase(name: String, ext: String) -> String {
-            let url = Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "testcases")!
-            return try! String(contentsOf: url)
+        // Load test cases from JSON - try multiple paths
+        var testCasesFile: TestCasesFile
+        
+        // Try Bundle.module first
+        if let url = Bundle.module.url(forResource: "testcases", withExtension: "json", subdirectory: "testcases"),
+           let data = try? Data(contentsOf: url) {
+            testCasesFile = try JSONDecoder().decode(TestCasesFile.self, from: data)
+        } else {
+            // Fallback: load from source directory
+            let sourcePath = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("testcases")
+                .appendingPathComponent("testcases.json")
+            let data = try Data(contentsOf: sourcePath)
+            testCasesFile = try JSONDecoder().decode(TestCasesFile.self, from: data)
         }
-        for (name, opt) in testCases {
-            let coverter = try ChineseConverter(options: opt)
-            let input = testCase(name: name, ext: "in")
-            let converted = coverter.convert(input)
-            let output = testCase(name: name, ext: "ans")
-            XCTAssertEqual(converted, output, "Conversion \(name) fails")
+        
+        for testCase in testCasesFile.cases {
+            for (conversionType, expectedOutput) in testCase.expected {
+                guard let options = conversionOptions(for: conversionType) else {
+                    continue // Skip unsupported conversion types
+                }
+                let converter = try ChineseConverter(options: options)
+                let result = converter.convert(testCase.input)
+                XCTAssertEqual(result, expectedOutput, "Conversion \(conversionType) failed for test case: \(testCase.id)")
+            }
         }
     }
     
+    func conversionOptions(for type: String) -> ChineseConverter.Options? {
+        switch type {
+        case "s2t":
+            return [.traditionalize]
+        case "t2s":
+            return [.simplify]
+        case "s2hk":
+            return [.traditionalize, .hkStandard]
+        case "hk2s":
+            return [.simplify, .hkStandard]
+        case "s2tw":
+            return [.traditionalize, .twStandard]
+        case "tw2s":
+            return [.simplify, .twStandard]
+        case "s2twp":
+            return [.traditionalize, .twStandard, .twIdiom]
+        case "tw2sp":
+            return [.simplify, .twStandard, .twIdiom]
+        case "t2hk":
+            return [.hkStandard]
+        case "tw2t":
+            return [.traditionalize]
+        default:
+            return nil
+        }
+    }
+
     func testConverterCreationPerformance() {
         let options: ChineseConverter.Options = [.traditionalize, .twStandard, .twIdiom]
         measure {
@@ -40,7 +93,7 @@ class OpenCCTests: XCTestCase {
             }
         }
     }
-    
+
     func testDictionaryCache() {
         let options: ChineseConverter.Options = [.traditionalize, .twStandard, .twIdiom]
         let holder = try! ChineseConverter(options: options)
@@ -51,12 +104,27 @@ class OpenCCTests: XCTestCase {
         }
         _ = holder.convert("foo")
     }
-    
+
     func testConversionPerformance() throws {
         let cov = try converter(option: [.traditionalize, .twStandard, .twIdiom])
-        let url = Bundle.module.url(forResource: "zuozhuan", withExtension: "txt", subdirectory: "benchmark")!
+        
+        // Try Bundle.module first, then fallback to source directory
+        var url: URL?
+        url = Bundle.module.url(forResource: "zuozhuan", withExtension: "txt", subdirectory: "benchmark")
+        if url == nil {
+            url = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("benchmark")
+                .appendingPathComponent("zuozhuan.txt")
+        }
+        
+        guard let fileURL = url else {
+            XCTFail("Could not find benchmark file")
+            return
+        }
+        
         // 1.9 MB, 624k word
-        let str = try String(contentsOf: url)
+        let str = try String(contentsOf: fileURL)
         measure {
             _ = cov.convert(str)
         }
