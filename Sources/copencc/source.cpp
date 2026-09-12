@@ -1,105 +1,103 @@
-#include "DartsDict.hpp"
-#include "DictGroup.hpp"
-#include "Converter.hpp"
-#include "MarisaDict.hpp"
-#include "MaxMatchSegmentation.hpp"
-#include "Conversion.hpp"
-#include "ConversionChain.hpp"
-
 #include "header.h"
+#include "Config.hpp"
+#include "Converter.hpp"
+#include "Exception.hpp"
+#include "ResourceProvider.hpp"
+#include <atomic>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 
-// MARK: Error
+namespace {
+std::atomic<size_t> liveConverters{0};
+std::atomic<size_t> liveStrings{0};
 
-void* catchOpenCCException(void* (^block)()) {
+// All ownership is inside this handle. Destroying it releases the converter,
+// conversion stages and their shared dictionaries through upstream RAII.
+struct ConverterHandle {
+    opencc::ConverterPtr converter;
+};
+
+template <typename Operation>
+void *catchException(CCErrorCode *error, Operation operation) {
     try {
-        return block();
-    } catch (opencc::FileNotFound& ex) {
-        ccErrorno = CCErrorCodeFileNotFound;
-        return NULL;
-    } catch (opencc::InvalidFormat& ex) {
-        ccErrorno = CCErrorCodeInvalidFormat;
-        return NULL;
-    } catch (opencc::InvalidTextDictionary& ex) {
-        ccErrorno = CCErrorCodeInvalidTextDictionary;
-        return NULL;
-    } catch (opencc::InvalidUTF8& ex) {
-        ccErrorno = CCErrorCodeInvalidUTF8;
-        return NULL;
-    } catch (opencc::Exception& ex) {
-        ccErrorno = CCErrorCodeUnknown;
-        return NULL;
+        return operation();
+    } catch (const opencc::FileNotFound &) {
+        *error = CCErrorCodeFileNotFound;
+    } catch (const opencc::InvalidTextDictionary &) {
+        *error = CCErrorCodeInvalidTextDictionary;
+    } catch (const opencc::InvalidFormat &) {
+        *error = CCErrorCodeInvalidFormat;
+    } catch (const opencc::InvalidUTF8 &) {
+        *error = CCErrorCodeInvalidUTF8;
+    } catch (...) {
+        *error = CCErrorCodeUnknown;
     }
+    return nullptr;
 }
+} // namespace
 
-// MARK: CCDict
-
-CCDictRef _Nullable CCDictCreateDartsWithPath(const char * _Nonnull path) {
-    return catchOpenCCException(^{
-        auto dict = opencc::SerializableDict::NewFromFile<opencc::DartsDict>(std::string(path));
-        auto dictPtr = new opencc::DictPtr(dict);
-        return static_cast<void*>(dictPtr);
+CCConverterRef CCConverterCreateWithConfig(const char *configPath,
+                                           const char *dictionaryDirectory,
+                                           CCErrorCode *error) {
+    return catchException(error, [&]() -> void * {
+        opencc::Config config;
+        auto provider = std::make_shared<opencc::FilesystemResourceProvider>(
+            std::vector<std::string>{dictionaryDirectory});
+        auto handle = std::make_unique<ConverterHandle>();
+        handle->converter = config.NewFromFile(configPath, provider);
+        ++liveConverters;
+        return handle.release();
     });
 }
 
-CCDictRef _Nullable CCDictCreateMarisaWithPath(const char * _Nonnull path) {
-    return catchOpenCCException(^{
-        auto dict = opencc::SerializableDict::NewFromFile<opencc::MarisaDict>(std::string(path));
-        auto dictPtr = new opencc::DictPtr(dict);
-        return static_cast<void*>(dictPtr);
+void CCConverterDestroy(CCConverterRef converter) {
+    delete static_cast<ConverterHandle *>(converter);
+    --liveConverters;
+}
+
+STLString CCConverterCreateConvertedStringFromBytes(CCConverterRef converter,
+                                                   const char *bytes,
+                                                   size_t length,
+                                                   CCErrorCode *error) {
+    return catchException(error, [&]() -> void * {
+        const auto &engine = static_cast<ConverterHandle *>(converter)->converter;
+        const std::string_view input(bytes, length);
+        auto result = std::make_unique<std::string>();
+        size_t separator = input.find('\0');
+        if (separator == std::string_view::npos) {
+            *result = engine->Convert(input);
+        } else {
+            // OpenCC 1.4.2 mmseg paths still treat embedded NUL as an end
+            // marker internally. Keep each NUL as a literal separator while
+            // converting complete NUL-free spans; input/output remain sized.
+            result->reserve(length);
+            size_t start = 0;
+            while (separator != std::string_view::npos) {
+                if (separator > start) {
+                    result->append(engine->Convert(input.substr(start, separator - start)));
+                }
+                result->push_back('\0');
+                start = separator + 1;
+                separator = input.find('\0', start);
+            }
+            if (start < length) { result->append(engine->Convert(input.substr(start))); }
+        }
+        ++liveStrings;
+        return result.release();
     });
 }
 
-CCDictRef _Nonnull CCDictCreateWithGroup(CCDictRef _Nonnull * const _Nonnull dictGroup, intptr_t count) {
-    std::list<opencc::DictPtr> list;
-    for (int i=0; i<count; i++) {
-        auto *dictPtr = static_cast<opencc::DictPtr*>(dictGroup[i]);
-        list.push_back(*dictPtr);
-    }
-    auto dict = new opencc::DictGroupPtr(new opencc::DictGroup(list));
-    return static_cast<void*>(dict);
+const char *STLStringGetUTF8String(STLString string) {
+    return static_cast<std::string *>(string)->data();
 }
-
-void CCDictDestroy(CCDictRef _Nonnull dict) {
-    auto *dictPtr = static_cast<opencc::DictPtr*>(dict);
-    dictPtr->reset();
+size_t STLStringGetLength(STLString string) {
+    return static_cast<std::string *>(string)->size();
 }
-
-// MARK: CCConverter
-
-CCConverterRef _Nonnull CCConverterCreate(const char * _Nonnull name, CCDictRef _Nonnull segmentation, CCDictRef _Nonnull * const _Nonnull conversionChain, intptr_t chainCount) {
-    auto *segmentationPtr = static_cast<opencc::DictPtr*>(segmentation);
-    std::list<opencc::ConversionPtr> conversions;
-    for (int i=0; i<chainCount; i++) {
-        auto *dictPtr = static_cast<opencc::DictPtr*>(conversionChain[i]);
-        auto conversion = opencc::ConversionPtr(new opencc::Conversion(*dictPtr));
-        conversions.push_back(conversion);
-    }
-    auto covName = std::string(name);
-    auto covSeg = opencc::SegmentationPtr(new opencc::MaxMatchSegmentation(*segmentationPtr));
-    auto covChain = opencc::ConversionChainPtr(new opencc::ConversionChain(conversions));
-    auto converter = new opencc::Converter(covName, covSeg, covChain);
-    return static_cast<void*>(converter);
+void STLStringDestroy(STLString string) {
+    delete static_cast<std::string *>(string);
+    --liveStrings;
 }
-
-void CCConverterDestroy(CCConverterRef _Nonnull dict) {
-    auto converter = static_cast<opencc::Converter*>(dict);
-    delete converter;
-}
-
-STLString _Nullable CCConverterCreateConvertedStringFromString(CCConverterRef _Nonnull converter, const char * _Nonnull str) {
-    return catchOpenCCException(^{
-        auto converterPtr = static_cast<opencc::Converter*>(converter);
-        auto string = new std::string(converterPtr->Convert(str));
-        return static_cast<void*>(string);
-    });
-}
-
-const char* _Nonnull STLStringGetUTF8String(STLString _Nonnull str) {
-    auto string = static_cast<std::string*>(str);
-    return string->c_str();
-}
-
-void STLStringDestroy(STLString _Nonnull str) {
-    auto string = static_cast<std::string*>(str);
-    delete string;
-}
+size_t CCConverterGetLiveHandleCount() { return liveConverters.load(); }
+size_t STLStringGetLiveHandleCount() { return liveStrings.load(); }

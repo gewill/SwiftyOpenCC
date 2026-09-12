@@ -1,11 +1,9 @@
-#include <stdint.h>
+#pragma once
+#include <stddef.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
-
-// MARK: Error
 
 enum CCErrorCode {
     CCErrorCodeFileNotFound = 1,
@@ -14,38 +12,28 @@ enum CCErrorCode {
     CCErrorCodeInvalidUTF8,
     CCErrorCodeUnknown,
 } __attribute__((enum_extensibility(open)));
-
 typedef enum CCErrorCode CCErrorCode;
 
-CCErrorCode ccErrorno;
+typedef void *CCConverterRef;
+typedef void *STLString;
 
-// MARK: CCDict
+CCConverterRef _Nullable CCConverterCreateWithConfig(
+    const char * _Nonnull configPath,
+    const char * _Nonnull dictionaryDirectory,
+    CCErrorCode * _Nonnull error);
+void CCConverterDestroy(CCConverterRef _Nonnull converter);
 
-typedef void* CCDictRef;
+STLString _Nullable CCConverterCreateConvertedStringFromBytes(
+    CCConverterRef _Nonnull converter, const char * _Nonnull bytes,
+    size_t length, CCErrorCode * _Nonnull error);
+const char * _Nonnull STLStringGetUTF8String(STLString _Nonnull string);
+size_t STLStringGetLength(STLString _Nonnull string);
+void STLStringDestroy(STLString _Nonnull string);
 
-CCDictRef _Nullable CCDictCreateDartsWithPath(const char * _Nonnull path);
-
-CCDictRef _Nullable CCDictCreateMarisaWithPath(const char * _Nonnull path);
-
-CCDictRef _Nonnull CCDictCreateWithGroup(CCDictRef _Nonnull * const _Nonnull dictGroup, intptr_t count);
-
-void CCDictDestroy(CCDictRef _Nonnull dict);
-
-// MARK: CCConverter
-
-typedef void* CCConverterRef;
-
-CCConverterRef _Nonnull CCConverterCreate(const char * _Nonnull name, CCDictRef _Nonnull segmentation, CCDictRef _Nonnull * const _Nonnull conversionChain, intptr_t chainCount);
-
-void CCConverterDestroy(CCConverterRef _Nonnull dict);
-
-typedef void* STLString;
-
-STLString _Nullable CCConverterCreateConvertedStringFromString(CCConverterRef _Nonnull converter, const char * _Nonnull str);
-
-const char* _Nonnull STLStringGetUTF8String(STLString _Nonnull str);
-
-void STLStringDestroy(STLString _Nonnull str);
+// Internal diagnostics used by lifetime regression tests. These counters count
+// owned bridge handles, not shared upstream dictionaries or allocations.
+size_t CCConverterGetLiveHandleCount(void);
+size_t STLStringGetLiveHandleCount(void);
 
 #ifdef __cplusplus
 }

@@ -48,36 +48,53 @@ public class ChineseConverter {
         public static let twIdiom = Options(rawValue: 1 << 10)
     }
     
-    private let seg: ConversionDictionary
-    private let chain: [ConversionDictionary]
-    
     private let converter: CCConverterRef
-    
-    private init(loader: DictionaryLoader, options: Options) throws {
-        seg = try loader.segmentation(options: options)
-        chain = try loader.conversionChain(options: options)
-        var rawChain = chain.map { $0.dict }
-        converter = CCConverterCreate("SwiftyOpenCC", seg.dict, &rawChain, rawChain.count)
+
+    /// The bundled configuration selected after applying the original option
+    /// precedence. Internal so the public API remains source compatible.
+    let configurationName: String
+
+    init(configurationName: String, configurationURL: URL, dictionaryDirectory: URL) throws {
+        var error = CCErrorCode.unknown
+        guard let converter = CCConverterCreateWithConfig(
+            configurationURL.path, dictionaryDirectory.path, &error
+        ) else {
+            throw ConversionError(error)
+        }
+        self.converter = converter
+        self.configurationName = configurationName
     }
-    
-    /// Returns an initialized `ChineseConverter` instance with the specified
-    /// conversion options.
-    ///
-    /// - Parameter options: The convert’s options.
-    /// - Throws: Throws `ConversionError` if failed.
+
+    /// Creates a converter using bundled, versioned OpenCC dictionaries.
+    /// Unknown option bits are ignored. Traditional conversion takes precedence
+    /// over simplification; Hong Kong takes precedence over Taiwan characters.
     public convenience init(options: Options) throws {
-        let loader = DictionaryLoader(bundle: .module)
-        try self.init(loader: loader, options: options)
+        let name = options.configurationName
+        let folder = name.hasPrefix("legacy-") ? "Compatibility" : "Official"
+        guard let url = Bundle.module.url(forResource: name, withExtension: "json",
+                                          subdirectory: "Resources/" + folder),
+              let dictionaries = Bundle.module.url(forResource: "Official", withExtension: nil,
+                                                    subdirectory: "Resources") else {
+            throw ConversionError.fileNotFound
+        }
+        try self.init(configurationName: name, configurationURL: url, dictionaryDirectory: dictionaries)
     }
-    
-    /// Return a converted string using the convert’s current option.
-    ///
-    /// - Parameter text: The string to convert.
-    /// - Returns: A converted string using the convert’s current option.
+
+    deinit {
+        CCConverterDestroy(converter)
+    }
+
+    /// Converts the complete UTF-8 string, including embedded U+0000 characters.
     public func convert(_ text: String) -> String {
-        let stlStr = CCConverterCreateConvertedStringFromString(converter, text)!
-        defer { STLStringDestroy(stlStr) }
-        return String(utf8String: STLStringGetUTF8String(stlStr))!
+        var error = CCErrorCode.unknown
+        let result = text.utf8CString.withUnsafeBufferPointer { bytes in
+            CCConverterCreateConvertedStringFromBytes(converter, bytes.baseAddress!, bytes.count - 1, &error)
+        }
+        guard let string = result else {
+            preconditionFailure("OpenCC conversion failed: \(ConversionError(error))")
+        }
+        defer { STLStringDestroy(string) }
+        let bytes = UnsafeRawPointer(STLStringGetUTF8String(string)).assumingMemoryBound(to: UInt8.self)
+        return String(decoding: UnsafeBufferPointer(start: bytes, count: STLStringGetLength(string)), as: UTF8.self)
     }
-    
 }

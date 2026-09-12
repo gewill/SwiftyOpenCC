@@ -1,91 +1,67 @@
-// swift-tools-version:5.3
-
+// swift-tools-version:5.4
 import PackageDescription
+import Foundation
+
+// The generated manifest keeps the native version macro in step with the
+// submodule without changing this package file for every dictionary release.
+let manifestURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    .appendingPathComponent("Sources/OpenCC/Resources/manifest.json")
+let manifest = try! JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as! [String: Any]
+let engineTag = (manifest["opencc"] as! [String: String])["tag"]!
+let engineVersion = String(engineTag.dropFirst(4))
 
 let package = Package(
     name: "SwiftyOpenCC",
-    products: [
-        .library(
-            name: "OpenCC",
-            targets: ["OpenCC"]),
-    ],
+    products: [.library(name: "OpenCC", targets: ["OpenCC"])],
     targets: [
-        .target(
-            name: "OpenCC",
-            dependencies: ["copencc"],
-            resources: [
-                .copy("Dictionary")
-            ]),
-        .testTarget(
-            name: "OpenCCTests",
-            dependencies: ["OpenCC"],
-            resources: [
-                .copy("benchmark"),
-                .copy("testcases"),
-            ]),
+        .target(name: "OpenCC", dependencies: ["copencc"], resources: [.copy("Resources")]),
+        .testTarget(name: "OpenCCTests", dependencies: ["OpenCC", "copencc"],
+                    resources: [.copy("testcases")]),
         .target(
             name: "copencc",
-            exclude: [
-                "src/benchmark",
-                "src/tools",
-                "src/BinaryDictTest.cpp",
-                "src/Config.cpp",
-                "src/ConfigTest.cpp",
-                "src/ConversionChainTest.cpp",
-                "src/ConversionTest.cpp",
-                "src/DartsDictTest.cpp",
-                "src/DictGroupTest.cpp",
-                "src/MarisaDictTest.cpp",
-                "src/MaxMatchSegmentationTest.cpp",
-                "src/PhraseExtractTest.cpp",
-                "src/SerializedValuesTest.cpp",
-                "src/SimpleConverter.cpp",
-                "src/SimpleConverterTest.cpp",
-                "src/TextDictTest.cpp",
-                "src/UTF8StringSliceTest.cpp",
-                "src/UTF8UtilTest.cpp",
-                "src/LexiconAnnotationTest.cpp",
-                "deps/google-benchmark",
-                "deps/googletest-1.15.0",
-                "deps/pybind11-2.13.1",
-                "deps/rapidjson-1.1.0",
-                "deps/tclap-1.2.5",
-
-                "src/CmdLineOutput.hpp",
-                "src/Config.hpp",
-                "src/ConfigTestBase.hpp",
-                "src/DictGroupTestBase.hpp",
-                "src/SimpleConverter.hpp",
-                "src/TestUtils.hpp",
-                "src/TestUtilsUTF8.hpp",
-                "src/TextDictTestBase.hpp",
-                "src/py_opencc.cpp",
-                "src/opencc_config.h",
-                "src/opencc_config.h.in",
-
-                // ???
-                "src/README.md",
-                "src/CMakeLists.txt",
-                "src/BUILD.bazel",
-                "src/BUILD",
-                "deps/marisa-0.2.6/AUTHORS",
-                "deps/marisa-0.2.6/CMakeLists.txt",
-                "deps/marisa-0.2.6/COPYING.md",
-                "deps/marisa-0.2.6/README.md",
-            ],
             sources: [
                 "source.cpp",
-                "src",
-                "deps/marisa-0.2.6",
+                "src/Config.cpp",
+                "src/Conversion.cpp",
+                "src/ConversionAmbiguities.cpp",
+                "src/ConversionCandidates.cpp",
+                "src/ConversionChain.cpp",
+                "src/Converter.cpp",
+                "src/Dict.cpp",
+                "src/DictConverter.cpp",
+                "src/DictEntry.cpp",
+                "src/DictGroup.cpp",
+                "src/Lexicon.cpp",
+                "src/MarisaDict.cpp",
+                "src/MaxMatchSegmentation.cpp",
+                "src/PhraseExtract.cpp",
+                "src/PipelineConverter.cpp",
+                "src/PluginSegmentation.cpp",
+                "src/PrefixMatch.cpp",
+                "src/SingleStageConverter.cpp",
+                "src/ResourceProvider.cpp",
+                "src/SerializableDict.cpp",
+                "src/SerializedValues.cpp",
+                "src/SimpleConverter.cpp",
+                "src/Segmentation.cpp",
+                "src/TextDict.cpp",
+                "src/UTF8StringSlice.cpp",
+                "src/UTF8Util.cpp",
+                "src/BinaryDict.cpp",
+                "src/DartsDict.cpp",
+                "marisa",
+
             ],
             cxxSettings: [
                 .headerSearchPath("src"),
-                .headerSearchPath("configure"),
-                .headerSearchPath("deps/darts-clone-0.32"),
-                .headerSearchPath("deps/marisa-0.2.6/include"),
-                .headerSearchPath("deps/marisa-0.2.6/lib"),
-                .define("OPENCC_ENABLE_DARTS"),
-            ]),
+                .headerSearchPath("deps/marisa-0.3.1/include"),
+                .headerSearchPath("deps/marisa-0.3.1/lib"),
+                .headerSearchPath("deps/darts-clone-0.32h/include"),
+                .headerSearchPath("deps/rapidjson-1.1.0"),
+                .define("Opencc_BUILT_AS_STATIC"),
+                .define("OPENCC_VERSION", to: "\"" + engineVersion + "\"")
+            ]
+        )
     ],
-    cxxLanguageStandard: .cxx14
+    cxxLanguageStandard: .cxx17
 )

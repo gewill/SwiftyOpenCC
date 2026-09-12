@@ -1,0 +1,218 @@
+{
+  "architecture": "arm64",
+  "baseline": {
+    "median": {
+      "baselineMaxRSSBytes": 7143424,
+      "coldCreateMs": 15.30612500011921,
+      "hotConvertMs": 187.58179199695587,
+      "loadedMaxRSSBytes": 17924096,
+      "maxRSSBytes": 38420480
+    },
+    "openccRevision": "907bfcbbd3aae86ff04bc8eaca67c8af03108ddf",
+    "samples": [
+      {
+        "baselineMaxRSSBytes": 7143424,
+        "coldCreateMs": 25.37083299458027,
+        "hotConvertMs": [
+          198.2274580001831,
+          194.3683749884367,
+          188.15137499570847,
+          187.51091600954533,
+          187.24204099178314
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 17956864,
+        "maxRSSBytes": 38387712,
+        "outputSHA256": "860676b3c864912a2738bf1ae42892409d6e15c56e8127dd48caeb503379e41f",
+        "outputUTF8Bytes": 1200000
+      },
+      {
+        "baselineMaxRSSBytes": 7143424,
+        "coldCreateMs": 15.478499993681908,
+        "hotConvertMs": [
+          190.19983300566673,
+          187.8412500023842,
+          186.94991600513458,
+          191.83750000596046,
+          188.44937500357628
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 17989632,
+        "maxRSSBytes": 38420480,
+        "outputSHA256": "860676b3c864912a2738bf1ae42892409d6e15c56e8127dd48caeb503379e41f",
+        "outputUTF8Bytes": 1200000
+      },
+      {
+        "baselineMaxRSSBytes": 7143424,
+        "coldCreateMs": 15.30612500011921,
+        "hotConvertMs": [
+          186.75200000405312,
+          187.2267500013113,
+          185.8034159988165,
+          185.97258400917053,
+          184.9296659976244
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 17924096,
+        "maxRSSBytes": 54476800,
+        "outputSHA256": "860676b3c864912a2738bf1ae42892409d6e15c56e8127dd48caeb503379e41f",
+        "outputUTF8Bytes": 1200000
+      },
+      {
+        "baselineMaxRSSBytes": 7143424,
+        "coldCreateMs": 15.056709006428719,
+        "hotConvertMs": [
+          187.58179199695587,
+          188.33175000548363,
+          191.12987500429153,
+          190.0788329988718,
+          185.05079199373722
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 17924096,
+        "maxRSSBytes": 38387712,
+        "outputSHA256": "860676b3c864912a2738bf1ae42892409d6e15c56e8127dd48caeb503379e41f",
+        "outputUTF8Bytes": 1200000
+      },
+      {
+        "baselineMaxRSSBytes": 7143424,
+        "coldCreateMs": 15.242375001311302,
+        "hotConvertMs": [
+          188.9046660065651,
+          188.95641699433327,
+          187.32220800220966,
+          187.35545900464058,
+          186.19379198551178
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 17924096,
+        "maxRSSBytes": 40206336,
+        "outputSHA256": "860676b3c864912a2738bf1ae42892409d6e15c56e8127dd48caeb503379e41f",
+        "outputUTF8Bytes": 1200000
+      }
+    ],
+    "sourceSHA256": {
+      "Package.swift": "3afa81959a69dcc788d2efd1ea68148499c354954c756338452bb7b1ec01a0fa",
+      "Sources/OpenCC/ChineseConverter.swift": "d6d4dc2d76e57f656f9deae8530f04489ae815b5cae5e380d44f8ff7c9ee8ad0",
+      "Sources/copencc/source.cpp": "adfd5d09c300acff8e558b40bbac093787179cd8da759a5acb0afca6fabb31ed"
+    },
+    "workingTreeHasChanges": false,
+    "wrapperBaseRevision": "53f200cebe40eade3ebda025b0e8980e08cf23fa"
+  },
+  "candidate": {
+    "median": {
+      "baselineMaxRSSBytes": 7258112,
+      "coldCreateMs": 30.856457993388176,
+      "hotConvertMs": 15.466958001255989,
+      "loadedMaxRSSBytes": 52019200,
+      "maxRSSBytes": 64929792
+    },
+    "openccRevision": "025f371dc76b598d77384fbdab90c937471844d8",
+    "samples": [
+      {
+        "baselineMaxRSSBytes": 7258112,
+        "coldCreateMs": 44.76716700196266,
+        "hotConvertMs": [
+          18.369957998394966,
+          16.152457997202873,
+          15.36395800113678,
+          15.365374997258186,
+          15.207333996891975
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 52002816,
+        "maxRSSBytes": 64880640,
+        "outputSHA256": "c7b23f5f742f02439da81cf28d553d429c090e54c8189e23a4af6c99ecb6a577",
+        "outputUTF8Bytes": 1224000
+      },
+      {
+        "baselineMaxRSSBytes": 7258112,
+        "coldCreateMs": 32.20608299970627,
+        "hotConvertMs": [
+          16.074083000421524,
+          15.329125002026558,
+          15.278666004538536,
+          15.118957996368408,
+          15.29220800101757
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 52019200,
+        "maxRSSBytes": 64962560,
+        "outputSHA256": "c7b23f5f742f02439da81cf28d553d429c090e54c8189e23a4af6c99ecb6a577",
+        "outputUTF8Bytes": 1224000
+      },
+      {
+        "baselineMaxRSSBytes": 7258112,
+        "coldCreateMs": 29.9449580013752,
+        "hotConvertMs": [
+          15.755208998918533,
+          15.51604200899601,
+          15.724041000008583,
+          15.565458998084068,
+          15.646209001541138
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 52051968,
+        "maxRSSBytes": 64929792,
+        "outputSHA256": "c7b23f5f742f02439da81cf28d553d429c090e54c8189e23a4af6c99ecb6a577",
+        "outputUTF8Bytes": 1224000
+      },
+      {
+        "baselineMaxRSSBytes": 7258112,
+        "coldCreateMs": 30.856457993388176,
+        "hotConvertMs": [
+          15.97825001180172,
+          15.466958001255989,
+          15.443499997258186,
+          15.399125009775162,
+          15.76783299446106
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 52035584,
+        "maxRSSBytes": 64962560,
+        "outputSHA256": "c7b23f5f742f02439da81cf28d553d429c090e54c8189e23a4af6c99ecb6a577",
+        "outputUTF8Bytes": 1224000
+      },
+      {
+        "baselineMaxRSSBytes": 7258112,
+        "coldCreateMs": 29.78558300435543,
+        "hotConvertMs": [
+          15.966416999697685,
+          15.531832993030548,
+          15.391957998275757,
+          15.296333000063896,
+          15.416166007518768
+        ],
+        "inputSHA256": "2dfa20d9efc595c4016b0b61401ae454939e3bf1a89c883355e50bc4aad033a4",
+        "inputUTF8Bytes": 1176000,
+        "loadedMaxRSSBytes": 51986432,
+        "maxRSSBytes": 64913408,
+        "outputSHA256": "c7b23f5f742f02439da81cf28d553d429c090e54c8189e23a4af6c99ecb6a577",
+        "outputUTF8Bytes": 1224000
+      }
+    ],
+    "sourceSHA256": {
+      "Package.swift": "eb27d56f6dc84e14c74081b45831a10942cd1c20ba059239d32bcb036679e117",
+      "Sources/OpenCC/ChineseConverter.swift": "efaa494bc53d952543a73682f794c925e3883a4a30bdf01dec5550ae8359f553",
+      "Sources/OpenCC/Resources/manifest.json": "8ece25227da099f939c10bf9b1bcad8df009d667d0d903dc0daa543c10dbe7bf",
+      "Sources/copencc/source.cpp": "e77b54f479af58b970eed3e3ba95b9e57d05ca98b05b10476597d5a1560d57e4"
+    },
+    "workingTreeHasChanges": true,
+    "wrapperBaseRevision": "53f200cebe40eade3ebda025b0e8980e08cf23fa"
+  },
+  "host": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "hotIterationsPerProcess": 5,
+  "memoryMetric": "getrusage.ru_maxrss; macOS bytes; peak includes input/output buffers",
+  "mode": "s2twp",
+  "processSamplesPerVersion": 5,
+  "swift": "Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)\nTarget: arm64-apple-macosx26.0"
+}

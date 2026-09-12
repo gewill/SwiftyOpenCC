@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""Build bundled resources from the checked-out OpenCC release, or verify them.
+
+Requires Python 3 and CMake for generation. --check needs only Python 3 and Git
+and never builds or changes resources. The caller owns submodule selection.
+"""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+ENGINE = ROOT / "OpenCC"
+RESOURCES = ROOT / "Sources/OpenCC/Resources"
+COMPATIBILITY = ROOT / "Configuration/Compatibility"
+MANIFEST = RESOURCES / "manifest.json"
+
+
+def git(*args):
+    return subprocess.check_output(["git", "-C", str(ENGINE), *args], text=True).strip()
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def source_version():
+    if git("status", "--porcelain", "--untracked-files=all"):
+        raise ValueError("OpenCC submodule must be clean")
+    revision = git("rev-parse", "HEAD")
+    tags = [tag for tag in git("tag", "--points-at", "HEAD").splitlines()
+            if re.fullmatch(r"ver\.\d+\.\d+\.\d+", tag)]
+    if len(tags) != 1:
+        raise ValueError("OpenCC HEAD must have exactly one stable ver.X.Y.Z tag")
+    return {"tag": tags[0], "revision": revision}
+
+
+def file_map(directory):
+    return {str(path.relative_to(directory)): digest(path)
+            for path in sorted(directory.rglob("*"))
+            if path.is_file() and path.name != "manifest.json"}
+
+
+def dictionaries():
+    source = (ENGINE / "data/CMakeLists.txt").read_text()
+    result = []
+    for name in ("DICTS_RAW", "DICTS_GENERATED"):
+        match = re.search(r"set\(\s*" + name + r"\s+([^)]*)\)", source)
+        if not match:
+            raise ValueError("OpenCC dictionary build layout changed: " + name)
+        result.extend(re.findall(r"^\s*(\w+)\s*$", match[1], flags=re.MULTILINE))
+    if not result or len(set(result)) != len(result):
+        raise ValueError("Invalid dictionary source inventory")
+    return sorted(result)
+
+
+def configuration_sources():
+    source = (ENGINE / "data/CMakeLists.txt").read_text()
+    match = re.search(r"set\(\s*CONFIG_FILES\s+([^)]*)\)", source)
+    if not match:
+        raise ValueError("OpenCC configuration build layout changed")
+    paths = [ENGINE / "data" / path for path in re.findall(r"config/[\w]+\.json", match[1])]
+    if not paths:
+        raise ValueError("Empty official configuration inventory")
+    return paths
+
+
+def validate_resource_references():
+    for config in RESOURCES.glob("*/*.json"):
+        def visit(value):
+            if isinstance(value, dict):
+                if isinstance(value.get("file"), str) and not (RESOURCES / "Official" / value["file"]).is_file():
+                    raise ValueError(f"{config.name}: missing dictionary {value['file']}")
+                for child in value.values():
+                    visit(child)
+            elif isinstance(value, list):
+                for child in value:
+                    visit(child)
+        visit(json.loads(config.read_text()))
+
+
+def check(version):
+    manifest = json.loads(MANIFEST.read_text())
+    if manifest.get("schemaVersion") != 1 or manifest.get("bridgeVersion") != 1:
+        raise ValueError("Unknown resource manifest or bridge version")
+    if manifest.get("opencc") != version:
+        raise ValueError("Resource manifest does not match the OpenCC submodule release")
+    if manifest.get("dictionaryFormat") != "ocd2" or manifest.get("byteOrder") != "little":
+        raise ValueError("Unexpected dictionary format or byte order")
+    if manifest.get("files") != file_map(RESOURCES):
+        raise ValueError("Resource inventory/hash mismatch; regenerate resources")
+    expected_official = {p.name for p in configuration_sources()}
+    expected_official.update(name + ".ocd2" for name in dictionaries())
+    if {p.name for p in (RESOURCES / "Official").iterdir()} != expected_official:
+        raise ValueError("Official resource inventory differs from the locked OpenCC source")
+    for source in list(configuration_sources()) + list(COMPATIBILITY.glob("*.json")):
+        folder = "Compatibility" if source.parent == COMPATIBILITY else "Official"
+        if digest(source) != digest(RESOURCES / folder / source.name):
+            raise ValueError("Configuration differs from its source: " + source.name)
+    if {p.name for p in (RESOURCES / "Compatibility").iterdir()} != {p.name for p in COMPATIBILITY.glob("*.json")}:
+        raise ValueError("Compatibility configuration inventory mismatch")
+    fixture = "testcases.json"
+    if digest(ENGINE / "test/testcases" / fixture) != digest(ROOT / "Tests/OpenCCTests/testcases" / fixture):
+        raise ValueError("Bundled test fixtures do not match the locked OpenCC release")
+    validate_resource_references()
+    print(f"Verified {version['tag']} ({version['revision']}): {len(manifest['files'])} resources")
+
+
+def generate(version):
+    if sys.byteorder != "little":
+        raise ValueError("Apple resources must be generated on a little-endian host")
+    build = ROOT / ".build/opencc-resources"
+    subprocess.run(["cmake", "-S", str(ENGINE), "-B", str(build),
+                    "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF",
+                    "-DBUILD_DOCUMENTATION=OFF", "-DBUILD_OPENCC_JIEBA_PLUGIN=OFF",
+                    "-DBUILD_PYTHON=OFF", "-DENABLE_GTEST=OFF", "-DENABLE_BENCHMARK=OFF",
+                    "-DOPENCC_DICT_FORMAT=ocd2", "-DOPENCC_ENABLE_INSTALL=OFF"], check=True)
+    subprocess.run(["cmake", "--build", str(build), "--target", "Dictionaries", "--parallel", "4"], check=True)
+    # Stage complete inventories first so failed builds never replace good resources.
+    staging = build / "staged-resources"
+    if staging.exists():
+        shutil.rmtree(staging)
+    for folder in ("Official", "Compatibility"):
+        (staging / folder).mkdir(parents=True)
+    for name in dictionaries():
+        shutil.copy2(build / "data" / (name + ".ocd2"), staging / "Official")
+    for source in configuration_sources():
+        shutil.copy2(source, staging / "Official")
+    for source in COMPATIBILITY.glob("*.json"):
+        shutil.copy2(source, staging / "Compatibility")
+    manifest = {"schemaVersion": 1, "bridgeVersion": 1, "opencc": version,
+                "dictionaryFormat": "ocd2", "byteOrder": "little", "files": file_map(staging)}
+    (staging / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    if RESOURCES.exists():
+        shutil.rmtree(RESOURCES)
+    shutil.copytree(staging, RESOURCES)
+    fixture_directory = ROOT / "Tests/OpenCCTests/testcases"
+    if fixture_directory.is_symlink():
+        fixture_directory.unlink()
+    fixture_directory.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ENGINE / "test/testcases/testcases.json", fixture_directory)
+    check(version)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="Verify source lock and bundled resource hashes without building")
+    args = parser.parse_args()
+    try:
+        version = source_version()
+        check(version) if args.check else generate(version)
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        raise SystemExit(str(error))
+
+
+if __name__ == "__main__":
+    main()
