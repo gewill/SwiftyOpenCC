@@ -36,7 +36,8 @@ A minimal upstream reproduction is `Config::NewFromFile(s2twp)` followed by `con
 - `swift test --sanitize=address --scratch-path .build/asan`: all 7 tests pass; no AddressSanitizer report.
 - `swift test --sanitize=thread --scratch-path .build/tsan --filter OpenCCTests.testConcurrentCreationAndSharedConversion`: passes; no ThreadSanitizer report.
 - The benchmark builds and links both actual SDKs with the same release-mode Swift executable. No simulator or full Xcode app build was used.
-- Before migration, official core/marisa sources were checked with C++17 and SDK availability errors enabled for `arm64-apple-macos11.0` and `arm64-apple-ios14.0`. Full application linkage/device behavior remains release acceptance work.
+- The new package was cross-compiled in release mode with `swift build --configuration release --target OpenCC --sdk <iphoneos-sdk> --triple arm64-apple-ios14.0 --scratch-path .build/ios14` (6.23 seconds). All 42 resulting object files (native engine/bridge and the Swift wrapper/resource accessor) were linked together using `xcrun swiftc -emit-library -target arm64-apple-ios14.0 -sdk <iphoneos-sdk> -lc++ <objects>`. Both steps passed; `vtool -show-build` confirms platform IOS, minimum OS 14.0, SDK 26.5. The validation dylib stays in `.build` and is not a shipped artifact. This verifies the complete SDK's compilation and linkage, not device runtime behavior.
+- Before migration, official core/marisa sources were also checked with C++17 and SDK availability errors enabled for `arm64-apple-macos11.0`. Full application linkage/device behavior remains release acceptance work.
 
 ## Same-machine engine benchmark
 
