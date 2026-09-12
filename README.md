@@ -20,23 +20,11 @@ converter.convert("鼠标里面的硅二极管坏了，导致光标分辨率降�
 
 `ChineseConverter` remains immutable and supports concurrent conversion. All five public option bits and their existing precedence are preserved, including the four mixed character/idiom combinations without an exact official configuration. Conversion accepts embedded U+0000 without truncating the suffix. Native handles are released when the Swift object is deinitialized.
 
-## Updating OpenCC
+## Upstream sync and maintenance
 
-The `OpenCC` submodule selects one official stable release. Source code, configurations, dictionaries and test fixtures must be updated together.
+This fork follows [`ddddxxx/SwiftyOpenCC`](https://github.com/ddddxxx/SwiftyOpenCC) wrapper commits and stable [`BYVoid/OpenCC`](https://github.com/BYVoid/OpenCC) releases. The coordinator lives in **OpenCCman/main**: it proposes a fork PR, then an **OpenCCman/build** revision-update PR after this fork's merge commit passes CI. Each PR is reviewed and merged by a maintainer.
 
-```sh
-git -C OpenCC fetch --tags
-git -C OpenCC checkout ver.1.4.2
-python3 scripts/update-opencc-resources.py
-python3 scripts/update-opencc-resources.py --check
-swift test
-```
-
-Generation requires Python 3 and CMake on a little-endian host. It builds dictionaries into `.build/opencc-resources`, copies the official JSON configurations and generated `.ocd2` files into the SwiftPM resource bundle, and records the exact release and SHA-256 inventory in `Sources/OpenCC/Resources/manifest.json`. It never edits the OpenCC submodule. `--check` only verifies the source lock and bundled files and requires no CMake or compilation.
-
-The four reviewed configurations in `Configuration/Compatibility` belong to this wrapper. They retain the old mixed-option meanings and must not be replaced by a fork-sync operation. An OpenCC release that changes its C++ source/dependency layout may also require a reviewed `Package.swift` update; changing the submodule alone is not sufficient.
-
-Tests read their fixture from the resource bundle, without a source-tree fallback. Ten official conversion modes are checked against upstream expected output; unsupported modes such as `tw2t` are explicitly excluded because the current public options cannot express them. There is no new public conversion mode in this migration.
+See the [fork maintenance guide](docs/upstream-sync.md) for source/resource updates, compatibility constraints and required checks. The shared [coordinator guide](https://github.com/gewill/OpenCCman/blob/main/docs/upstream-sync.md) covers scheduling, commands, credentials and rollback. Updating only the OpenCC submodule is insufficient: source, configurations, dictionaries and fixtures must stay in sync.
 
 ## Validation and performance
 
