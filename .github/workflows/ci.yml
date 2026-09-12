@@ -27,6 +27,8 @@ jobs:
           persist-credentials: false
       - name: Verify bundled resources
         run: python3 scripts/update-opencc-resources.py --check
+      - name: Resolve a Git revision dependency
+        run: python3 scripts/check-revision-dependency.py
       - name: SwiftPM compatibility and lifetime tests
         run: swift test
       - name: AddressSanitizer regression

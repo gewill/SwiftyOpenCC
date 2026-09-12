@@ -8,6 +8,7 @@ The wrapper now uses official OpenCC configuration loading and lifetime manageme
 - New engine: OpenCC [`ver.1.4.2`](https://github.com/BYVoid/OpenCC/releases/tag/ver.1.4.2), commit `025f371dc76b598d77384fbdab90c937471844d8`.
 - The resource generator builds the official `Dictionaries` CMake target, bundles its 22 `.ocd2` dictionaries and 16 official configurations, and adds four reviewed compatibility configurations. A manifest records the source tag/SHA and hashes for all 42 resources. Official test fixtures are copied into the test bundle and checked against the locked source.
 - The OpenCC submodule stays clean. No generated header, patch or binary is written into it. C++ source inventory and dependency paths are explicit in SwiftPM; a future upstream layout change requires compatibility review.
+- `Package.swift` declares the native version without reading other files. SwiftPM evaluates a Git revision's manifest in a virtual filesystem where `#filePath` can be `/Package.swift`; the checkout's resource manifest is unavailable there. The resource generator updates the `openccVersion` constant and `--check` verifies it against the locked source release.
 - `.ocd2` contains host-endian marisa data. These Apple resources are generated on a little-endian host and checked as such; this is not a claim of big-endian portability.
 
 ## Compatibility and intentional output changes
@@ -31,6 +32,7 @@ A minimal upstream reproduction is `Config::NewFromFile(s2twp)` followed by `con
 ## Verification
 
 - `python3 scripts/update-opencc-resources.py --check`: exact source lock and all resource/configuration/test-fixture checks pass.
+- `python3 scripts/check-revision-dependency.py`: resolves committed `HEAD` through a temporary `file://` Git remote and an isolated cache, then verifies the exact revision in the consumer's lockfile. This exercises Git VFS manifest evaluation rather than a local path dependency. `--revision 5e965781dc7677ca020f96bc8330be160df0853d` reproduces the original missing `/Sources/OpenCC/Resources/manifest.json` failure without an engine build.
 - Removed the entire CMake resource build directory and regenerated from scratch; the manifest reproduced SHA-256 `8ece25227da099f939c10bf9b1bcad8df009d667d0d903dc0daa543c10dbe7bf`.
 - `swift test`: 7 tests pass, covering all 32 option combinations/14 effective modes, 495 official expected outputs, four compatibility outputs, empty/leading/trailing/consecutive NUL, CRLF/combining accents/emoji/long boundaries, 64 concurrent constructors with shared conversion, missing configurations, and 100 native create/convert/destroy cycles.
 - `swift test --sanitize=address --scratch-path .build/asan`: all 7 tests pass; no AddressSanitizer report.
