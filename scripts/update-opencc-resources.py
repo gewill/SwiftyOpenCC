@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build bundled resources from the checked-out OpenCC release, or verify them.
 
-Requires Python 3 and CMake for generation. --check needs only Python 3 and Git
+Requires Python 3 and a macOS C++ toolchain for generation.
+Downloads the hash-locked CMake distribution into .build; no global install. --check needs only Python 3 and Git
 and never builds or changes resources. The caller owns submodule selection.
 """
 import argparse
@@ -12,6 +13,8 @@ import re
 import shutil
 import subprocess
 import sys
+
+import opencc_build
 
 ROOT = Path(__file__).resolve().parents[1]
 ENGINE = ROOT / "OpenCC"
@@ -98,6 +101,7 @@ def check(version):
     if PACKAGE.read_text() != package_source(version):
         raise ValueError("Package.swift OpenCC version does not match the submodule release; regenerate resources")
     manifest = json.loads(MANIFEST.read_text())
+    opencc_build.check_provenance(manifest.get("generation"))
     if manifest.get("schemaVersion") != 1 or manifest.get("bridgeVersion") != 1:
         raise ValueError("Unknown resource manifest or bridge version")
     if manifest.get("opencc") != version:
@@ -128,12 +132,10 @@ def generate(version):
         raise ValueError("Apple resources must be generated on a little-endian host")
     updated_package = package_source(version)
     build = ROOT / ".build/opencc-resources"
-    subprocess.run(["cmake", "-S", str(ENGINE), "-B", str(build),
-                    "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF",
-                    "-DBUILD_DOCUMENTATION=OFF", "-DBUILD_OPENCC_JIEBA_PLUGIN=OFF",
-                    "-DBUILD_PYTHON=OFF", "-DENABLE_GTEST=OFF", "-DENABLE_BENCHMARK=OFF",
-                    "-DOPENCC_DICT_FORMAT=ocd2", "-DOPENCC_ENABLE_INSTALL=OFF"], check=True)
-    subprocess.run(["cmake", "--build", str(build), "--target", "Dictionaries", "--parallel", "4"], check=True)
+    cmake = opencc_build.cmake()
+    opencc_build.configure(cmake, ENGINE, build)
+    subprocess.run([cmake, "--build", str(build), "--target", "Dictionaries", "--parallel", "4"], check=True)
+    generation = opencc_build.provenance(build)
     # Stage complete inventories first so failed builds never replace good resources.
     staging = build / "staged-resources"
     if staging.exists():
@@ -147,7 +149,8 @@ def generate(version):
     for source in COMPATIBILITY.glob("*.json"):
         shutil.copy2(source, staging / "Compatibility")
     manifest = {"schemaVersion": 1, "bridgeVersion": 1, "opencc": version,
-                "dictionaryFormat": "ocd2", "byteOrder": "little", "files": file_map(staging)}
+                "dictionaryFormat": "ocd2", "byteOrder": "little", "files": file_map(staging),
+                "generation": generation}
     (staging / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     if RESOURCES.exists():
         shutil.rmtree(RESOURCES)
