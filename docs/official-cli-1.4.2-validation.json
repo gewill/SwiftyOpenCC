@@ -1,0 +1,69 @@
+{
+  "cliBuildArguments": [
+    "--target",
+    "opencc",
+    "Dictionaries",
+    "--parallel",
+    "4"
+  ],
+  "cliCompiler": {
+    "CMAKE_CXX_COMPILER_ID": "AppleClang",
+    "CMAKE_CXX_COMPILER_VERSION": "21.0.0.21000101"
+  },
+  "cliConfigureArguments": [
+    "-G",
+    "Unix Makefiles",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DBUILD_DOCUMENTATION=OFF",
+    "-DBUILD_OPENCC_JIEBA_PLUGIN=OFF",
+    "-DBUILD_PYTHON=OFF",
+    "-DENABLE_GTEST=OFF",
+    "-DENABLE_BENCHMARK=OFF",
+    "-DOPENCC_DICT_FORMAT=ocd2",
+    "-DOPENCC_ENABLE_INSTALL=OFF"
+  ],
+  "cliConversionArguments": [
+    "--include-tofu-risk-dictionaries"
+  ],
+  "cliHost": {
+    "architecture": "arm64",
+    "system": "Darwin",
+    "version": "26.6.2"
+  },
+  "cliSHA256": "2083ca8bbef6e7aad463ea22d54c9528e275c193508a7c65b8c4337f80bebaa9",
+  "cmake": {
+    "executable": "cmake-4.4.3-macos10.10-universal/CMake.app/Contents/bin/cmake",
+    "sha256": "217a8c7bef7b70e8f9dc3748e625b92b19732b3eb26f6d99f23ef3f2768a8665",
+    "url": "https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-macos10.10-universal.tar.gz",
+    "version": "4.4.3"
+  },
+  "comparisons": 565,
+  "coverage": {
+    "hk2s": 28,
+    "s2hk": 58,
+    "s2t": 112,
+    "s2tw": 72,
+    "s2twp": 92,
+    "t2hk": 24,
+    "t2s": 62,
+    "t2tw": 17,
+    "tw2s": 39,
+    "tw2sp": 61
+  },
+  "nulContract": "fixed wrapper expectation passed; excluded from native CLI parity",
+  "officialFixtureComparisons": 495,
+  "officialFixtureSHA256": "3f8273c5f432090ec1a8a01bd4d545046ad5a28e69eb41a081c5e3e54d3e402b",
+  "opencc": {
+    "revision": "025f371dc76b598d77384fbdab90c937471844d8",
+    "tag": "ver.1.4.2"
+  },
+  "rowInventorySHA256": "8fcda1c49029ac60442ddba0f103a05d4de8b704a2c6fb0f518782d27a0f0c06",
+  "status": "passed",
+  "validationDate": "2026-09-13",
+  "wrapperSourceSHA256": {
+    "Package.swift": "30de6053b16d19ae80c4a3d545e59b122e80fcfbba630f4bbdf1573dfdd6651f",
+    "Sources/OpenCC/ChineseConverter.swift": "efaa494bc53d952543a73682f794c925e3883a4a30bdf01dec5550ae8359f553",
+    "Sources/copencc/source.cpp": "e77b54f479af58b970eed3e3ba95b9e57d05ca98b05b10476597d5a1560d57e4"
+  }
+}

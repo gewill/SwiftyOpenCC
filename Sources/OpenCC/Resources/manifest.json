@@ -46,6 +46,43 @@
     "Official/tw2sp.json": "f8cf900c1b456a7d2e8477f5bf146814071d28ad64ef37fbc0ae757930c167d5",
     "Official/tw2t.json": "5bc1991e12b35100b2df4b6b534bbaeeb18fbbabe5cd5c15c611736011225530"
   },
+  "generation": {
+    "buildArguments": [
+      "--target",
+      "Dictionaries",
+      "--parallel",
+      "4"
+    ],
+    "cmake": {
+      "executable": "cmake-4.4.3-macos10.10-universal/CMake.app/Contents/bin/cmake",
+      "sha256": "217a8c7bef7b70e8f9dc3748e625b92b19732b3eb26f6d99f23ef3f2768a8665",
+      "url": "https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-macos10.10-universal.tar.gz",
+      "version": "4.4.3"
+    },
+    "compiler": {
+      "CMAKE_CXX_COMPILER_ID": "AppleClang",
+      "CMAKE_CXX_COMPILER_VERSION": "21.0.0.21000101"
+    },
+    "configureArguments": [
+      "-G",
+      "Unix Makefiles",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DBUILD_SHARED_LIBS=OFF",
+      "-DBUILD_DOCUMENTATION=OFF",
+      "-DBUILD_OPENCC_JIEBA_PLUGIN=OFF",
+      "-DBUILD_PYTHON=OFF",
+      "-DENABLE_GTEST=OFF",
+      "-DENABLE_BENCHMARK=OFF",
+      "-DOPENCC_DICT_FORMAT=ocd2",
+      "-DOPENCC_ENABLE_INSTALL=OFF"
+    ],
+    "host": {
+      "architecture": "arm64",
+      "system": "Darwin",
+      "version": "26.6.2"
+    },
+    "schemaVersion": 1
+  },
   "opencc": {
     "revision": "025f371dc76b598d77384fbdab90c937471844d8",
     "tag": "ver.1.4.2"

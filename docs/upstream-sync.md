@@ -52,7 +52,7 @@ swift test
 
 The accepted 1.4.2 SHA is `025f371dc76b598d77384fbdab90c937471844d8`. The current source of truth is the submodule and resource manifest, rather than this example.
 
-Generation requires Python 3, CMake, a suitable C++ toolchain and a little-endian host. [The generator](../scripts/update-opencc-resources.py) builds the checked-out core's `Dictionaries` target in `.build/opencc-resources`. It copies official JSON configurations and `.ocd2` dictionaries, copies this fork's compatibility configurations and the same release's official test fixture, updates the generated `openccVersion` declaration in `Package.swift`, and records the core tag/SHA and resource checksums. It never switches or edits the OpenCC submodule itself.
+Generation requires Python 3, a suitable macOS C++ toolchain and a little-endian host. The generator downloads the official CMake distribution locked by version and SHA-256 in [BuildTools/cmake.json](../BuildTools/cmake.json) into `.build/pinned-cmake`; it does not install or upgrade global tools. The checked-in checksum comes from the [official CMake release](https://cmake.org/download/). [The generator](../scripts/update-opencc-resources.py) builds the checked-out core's `Dictionaries` target in `.build/opencc-resources`. It copies official JSON configurations and `.ocd2` dictionaries, copies this fork's compatibility configurations and the same release's official test fixture, updates the generated `openccVersion` declaration in `Package.swift`, and records the core tag/SHA, resource checksums, pinned CMake source, actual configure/build arguments, configured compiler identity/version and generation host in the manifest. Compiler and OS versions are recorded, not claimed to be pinned. It never switches or edits the OpenCC submodule itself.
 
 `--check` needs Python 3, Git and an initialized source submodule, but no CMake or compilation. It verifies the clean source lock, package version declaration, inventories, checksums, configuration references and bundled test fixture. Commit the submodule pointer and every corresponding generated change together. A new upstream C++ source/dependency layout also requires a reviewed `Package.swift` change.
 
@@ -66,6 +66,8 @@ Tests load fixtures from the resource bundle without a source-tree fallback. Mod
 
 ```sh
 python3 scripts/update-opencc-resources.py --check
+python3 -m unittest discover -s Tests -p 'test_*.py'
+python3 scripts/check-official-cli.py
 python3 scripts/check-revision-dependency.py
 swift test
 swift test --sanitize=address --scratch-path .build/asan
@@ -74,6 +76,10 @@ git diff --exit-code
 ```
 
 The revision-consumer check resolves **committed HEAD** through a temporary Git remote and verifies the exact pin. Commit candidate changes before using it as evidence for that candidate: it does not test uncommitted edits. Keep `Package.swift` independent of adjacent runtime files; SwiftPM can evaluate a Git revision's manifest in a virtual filesystem where the resource JSON is unavailable.
+
+The official CLI check builds the same locked source and dictionaries independently, then compares 495 official-fixture cases plus 70 format-boundary cases byte-for-byte across all ten public official modes. It passes `--include-tofu-risk-dictionaries` because `ConfigLoadOptions` defaults to true in the library while the CLI defaults to false; this preserves the existing wrapper's rare-character behavior. The four compatibility configurations remain covered by their fixed Swift tests. A separate fixed NUL assertion protects the wrapper workaround; NUL inputs are deliberately excluded from native parity.
+
+The CLI check writes `.build/official-cli-report.json` (including failures) and CI retains it for 14 days. The report records source/configuration, compiler, hashes and per-case coverage; a previous green report is replaced before validation starts. See [the 1.3 validation follow-up](v1.3-validation-follow-up.md) for recorded evidence and remaining app acceptance work.
 
 These engine checks do not replace app release acceptance. New compatibility changes still need the application checks and any relevant deployment/runtime validation. Benchmark actual versions on the same host when making performance claims; faster upstream conversion does not by itself prove faster application startup or lower memory usage.
 
