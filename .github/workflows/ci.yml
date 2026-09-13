@@ -29,6 +29,18 @@ jobs:
         run: python3 scripts/update-opencc-resources.py --check
       - name: Verify iOS resource bundle signing
         run: bash scripts/check-ios-resource-signing.sh
+      - name: Check generation validation failures
+        run: python3 -m unittest discover -s Tests -p 'test_*.py'
+      - name: Compare against the official CLI
+        run: python3 scripts/check-official-cli.py
+      - name: Preserve CLI comparison report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: official-cli-comparison
+          path: .build/official-cli-report.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Resolve a Git revision dependency
         run: python3 scripts/check-revision-dependency.py
       - name: SwiftPM compatibility and lifetime tests

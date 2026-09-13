@@ -1,0 +1,6 @@
+{
+  "version": "4.4.3",
+  "url": "https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-macos10.10-universal.tar.gz",
+  "sha256": "217a8c7bef7b70e8f9dc3748e625b92b19732b3eb26f6d99f23ef3f2768a8665",
+  "executable": "cmake-4.4.3-macos10.10-universal/CMake.app/Contents/bin/cmake"
+}
