@@ -9,7 +9,13 @@ let package = Package(
     name: "SwiftyOpenCC",
     products: [.library(name: "OpenCC", targets: ["OpenCC"])],
     targets: [
-        .target(name: "OpenCC", dependencies: ["copencc"], resources: [.copy("Resources")]),
+        // Copy the data folders, not a top-level "Resources" directory: that
+        // directory makes an iOS bundle unsuitable for Xcode Cloud signing.
+        .target(name: "OpenCC", dependencies: ["copencc"], resources: [
+            .copy("Resources/Official"),
+            .copy("Resources/Compatibility"),
+            .copy("Resources/manifest.json")
+        ]),
         .testTarget(name: "OpenCCTests", dependencies: ["OpenCC", "copencc"],
                     resources: [.copy("testcases")]),
         .target(

@@ -27,6 +27,8 @@ jobs:
           persist-credentials: false
       - name: Verify bundled resources
         run: python3 scripts/update-opencc-resources.py --check
+      - name: Verify iOS resource bundle signing
+        run: bash scripts/check-ios-resource-signing.sh
       - name: Check generation validation failures
         run: python3 -m unittest discover -s Tests -p 'test_*.py'
       - name: Compare against the official CLI

@@ -34,6 +34,8 @@ See [the 1.4.2 migration record](docs/opencc-1.4.2-migration.md) for test covera
 python3 scripts/benchmark-engine.py --baseline /path/to/SwiftyOpenCC-at-53f200c --candidate . --output /tmp/engine-benchmark.json
 ```
 
+Run `bash scripts/check-ios-resource-signing.sh` to verify iOS resource packaging with Xcode Cloud's archive signing settings. See the [resource bundle signing fix](docs/xcode-cloud-resource-signing.md) for the reproduced failure and validation boundary.
+
 ## License
 
 The Swift wrapper is available under the [MIT license](LICENSE). OpenCC and its bundled dependencies retain their respective upstream licenses.
