@@ -72,9 +72,8 @@ public class ChineseConverter {
         let name = options.configurationName
         let folder = name.hasPrefix("legacy-") ? "Compatibility" : "Official"
         guard let url = Bundle.module.url(forResource: name, withExtension: "json",
-                                          subdirectory: "Resources/" + folder),
-              let dictionaries = Bundle.module.url(forResource: "Official", withExtension: nil,
-                                                    subdirectory: "Resources") else {
+                                          subdirectory: folder),
+              let dictionaries = Bundle.module.url(forResource: "Official", withExtension: nil) else {
             throw ConversionError.fileNotFound
         }
         try self.init(configurationName: name, configurationURL: url, dictionaryDirectory: dictionaries)
