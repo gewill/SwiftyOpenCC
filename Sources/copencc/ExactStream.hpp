@@ -86,6 +86,9 @@ public:
 
     std::string Append(std::string_view input, bool finish) {
         std::string output;
+        // Reserve like AppendConverted: growing a chunk-sized result by doubling
+        // leaves larger transient buffers and raised peak RSS by a few MiB.
+        output.reserve(input.size() + input.size() / 5);
         // The output loop of upstream Conversion::AppendConverted, driven by the
         // units the scanner already decided with an upstream PrefixMatch over
         // the same dictionary, so each byte is matched once rather than twice.
