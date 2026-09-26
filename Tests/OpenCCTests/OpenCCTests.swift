@@ -124,6 +124,13 @@ final class OpenCCTests: XCTestCase {
                 if local.convert("鼠标\0汉字") != "滑鼠\0漢字" || shared.convert("鼠标\0汉字") != "滑鼠\0漢字" {
                     lock.lock(); failures.append("Wrong concurrent result"); lock.unlock()
                 }
+                let stream = try shared.makeStream()
+                var streamed = try stream.append(Data("鼠".utf8))
+                streamed.append(try stream.append(Data("标\0汉字".utf8)))
+                streamed.append(try stream.finish())
+                if String(decoding: streamed, as: UTF8.self) != "滑鼠\0漢字" {
+                    lock.lock(); failures.append("Wrong concurrent stream result"); lock.unlock()
+                }
             } catch {
                 lock.lock(); failures.append(String(describing: error)); lock.unlock()
             }

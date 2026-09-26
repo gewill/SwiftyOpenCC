@@ -3,6 +3,7 @@
 #include "Converter.hpp"
 #include "Exception.hpp"
 #include "ResourceProvider.hpp"
+#include "ExactStream.hpp"
 #include <atomic>
 #include <memory>
 #include <string>
@@ -12,11 +13,18 @@
 namespace {
 std::atomic<size_t> liveConverters{0};
 std::atomic<size_t> liveStrings{0};
+std::atomic<size_t> liveStreams{0};
 
 // All ownership is inside this handle. Destroying it releases the converter,
 // conversion stages and their shared dictionaries through upstream RAII.
 struct ConverterHandle {
     opencc::ConverterPtr converter;
+};
+
+struct StreamHandle {
+    explicit StreamHandle(const opencc::ConverterPtr& converter) : stream(converter) {}
+    swiftyopencc::ExactStream stream;
+    bool closed = false;
 };
 
 template <typename Operation>
@@ -31,6 +39,8 @@ void *catchException(CCErrorCode *error, Operation operation) {
         *error = CCErrorCodeInvalidFormat;
     } catch (const opencc::InvalidUTF8 &) {
         *error = CCErrorCodeInvalidUTF8;
+    } catch (const swiftyopencc::UnsupportedStream &) {
+        *error = CCErrorCodeUnsupportedStreamingConfiguration;
     } catch (...) {
         *error = CCErrorCodeUnknown;
     }
@@ -56,6 +66,55 @@ void CCConverterDestroy(CCConverterRef converter) {
     delete static_cast<ConverterHandle *>(converter);
     --liveConverters;
 }
+
+CCStreamRef CCConverterCreateStream(CCConverterRef converter, CCErrorCode *error) {
+    return catchException(error, [&]() -> void * {
+        auto stream = std::make_unique<StreamHandle>(static_cast<ConverterHandle *>(converter)->converter);
+        ++liveStreams;
+        return stream.release();
+    });
+}
+
+void CCStreamDestroy(CCStreamRef stream) {
+    delete static_cast<StreamHandle *>(stream);
+    --liveStreams;
+}
+
+static STLString ConvertStream(CCStreamRef stream, const char *bytes, size_t length,
+                               bool finish, CCErrorCode *error) {
+    auto handle = static_cast<StreamHandle *>(stream);
+    if (handle->closed) {
+        *error = CCErrorCodeStreamClosed;
+        return nullptr;
+    }
+    // Any exception makes the session terminal: callers must discard partial
+    // output, never accidentally resume after a skipped malformed input chunk.
+    handle->closed = true;
+    return catchException(error, [&]() -> void * {
+        if (bytes == nullptr && length != 0) {
+            throw opencc::InvalidUTF8("Missing UTF-8 bytes");
+        }
+        auto result = std::make_unique<std::string>(handle->stream.Append(
+            std::string_view(bytes ? bytes : "", length), finish));
+        handle->closed = finish;
+        ++liveStrings;
+        return result.release();
+    });
+}
+
+STLString CCStreamAppend(CCStreamRef stream, const char *bytes, size_t length, CCErrorCode *error) {
+    return ConvertStream(stream, bytes, length, false, error);
+}
+
+STLString CCStreamFinish(CCStreamRef stream, CCErrorCode *error) {
+    return ConvertStream(stream, nullptr, 0, true, error);
+}
+
+size_t CCStreamGetPendingByteCount(CCStreamRef stream) {
+    return static_cast<StreamHandle *>(stream)->stream.PendingBytes();
+}
+
+size_t CCStreamGetLiveHandleCount() { return liveStreams.load(); }
 
 STLString CCConverterCreateConvertedStringFromBytes(CCConverterRef converter,
                                                    const char *bytes,

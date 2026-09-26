@@ -11,17 +11,31 @@ enum CCErrorCode {
     CCErrorCodeInvalidTextDictionary,
     CCErrorCodeInvalidUTF8,
     CCErrorCodeUnknown,
+    CCErrorCodeUnsupportedStreamingConfiguration,
+    CCErrorCodeStreamClosed,
 } __attribute__((enum_extensibility(open)));
 typedef enum CCErrorCode CCErrorCode;
 
 typedef void *CCConverterRef;
 typedef void *STLString;
+typedef void *CCStreamRef;
 
 CCConverterRef _Nullable CCConverterCreateWithConfig(
     const char * _Nonnull configPath,
     const char * _Nonnull dictionaryDirectory,
     CCErrorCode * _Nonnull error);
 void CCConverterDestroy(CCConverterRef _Nonnull converter);
+
+CCStreamRef _Nullable CCConverterCreateStream(CCConverterRef _Nonnull converter,
+                                            CCErrorCode * _Nonnull error);
+void CCStreamDestroy(CCStreamRef _Nonnull stream);
+STLString _Nullable CCStreamAppend(CCStreamRef _Nonnull stream,
+                                  const char * _Nullable bytes, size_t length,
+                                  CCErrorCode * _Nonnull error);
+STLString _Nullable CCStreamFinish(CCStreamRef _Nonnull stream,
+                                  CCErrorCode * _Nonnull error);
+size_t CCStreamGetPendingByteCount(CCStreamRef _Nonnull stream);
+size_t CCStreamGetLiveHandleCount(void);
 
 STLString _Nullable CCConverterCreateConvertedStringFromBytes(
     CCConverterRef _Nonnull converter, const char * _Nonnull bytes,

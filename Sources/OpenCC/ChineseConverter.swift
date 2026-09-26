@@ -83,6 +83,17 @@ public class ChineseConverter {
         CCConverterDestroy(converter)
     }
 
+    /// Creates an independent, bounded-memory UTF-8 conversion session.
+    /// The session may outlive this converter. Use each session from one serial
+    /// execution context; separate sessions may run concurrently.
+    public func makeStream() throws -> ChineseConversionStream {
+        var error = CCErrorCode.unknown
+        guard let stream = CCConverterCreateStream(converter, &error) else {
+            throw ConversionError(error)
+        }
+        return ChineseConversionStream(stream: stream)
+    }
+
     /// Converts the complete UTF-8 string, including embedded U+0000 characters.
     public func convert(_ text: String) -> String {
         var error = CCErrorCode.unknown
