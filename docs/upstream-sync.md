@@ -75,6 +75,8 @@ swift test --sanitize=thread --scratch-path .build/tsan --filter OpenCCTests.tes
 git diff --exit-code
 ```
 
+No workflow runs on tags. The fork removed upstream's Jazzy workflow, which ran on every `v*` tag and force-pushed a generated `gh-pages` branch using an `ACCESS_TOKEN` secret. This fork has neither that secret nor a Pages site, and the workflow never ran here. An upstream sync that changes it stops at the coordinator's workflow check. Keep it removed unless documentation hosting is set up on purpose.
+
 The revision-consumer check resolves **committed HEAD** through a temporary Git remote and verifies the exact pin. Commit candidate changes before using it as evidence for that candidate: it does not test uncommitted edits. Keep `Package.swift` independent of adjacent runtime files; SwiftPM can evaluate a Git revision's manifest in a virtual filesystem where the resource JSON is unavailable.
 
 The official CLI check builds the same locked source and dictionaries independently, then compares 495 official-fixture cases plus 70 format-boundary cases byte-for-byte across all ten public official modes. It passes `--include-tofu-risk-dictionaries` because `ConfigLoadOptions` defaults to true in the library while the CLI defaults to false; this preserves the existing wrapper's rare-character behavior. The four compatibility configurations remain covered by their fixed Swift tests. A separate fixed NUL assertion protects the wrapper workaround; NUL inputs are deliberately excluded from native parity.
