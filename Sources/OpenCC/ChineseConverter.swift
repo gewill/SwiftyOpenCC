@@ -85,11 +85,13 @@ public class ChineseConverter {
 
     /// Creates an independent, bounded-memory UTF-8 conversion session.
     /// The session may outlive this converter. Use each session from one serial
-    /// execution context; separate sessions may run concurrently.
+    /// execution context; separate sessions may run concurrently. Throws
+    /// `ConversionStreamError.unsupportedConfiguration` when the configuration
+    /// has no exact streaming support.
     public func makeStream() throws -> ChineseConversionStream {
         var error = CCErrorCode.unknown
         guard let stream = CCConverterCreateStream(converter, &error) else {
-            throw ConversionError(error)
+            throw streamError(error)
         }
         return ChineseConversionStream(stream: stream)
     }

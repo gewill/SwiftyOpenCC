@@ -40,7 +40,9 @@ and BOM, matching complete-string conversion. File applications that omit the
 leading BOM must strip it before appending. Chunk boundaries may split UTF-8
 scalars or phrases. Malformed UTF-8 throws `ConversionError.invalidUTF8`;
 `finish()` also rejects a truncated final scalar. Completion or any error makes
-the session terminal (`ConversionError.streamClosed` on subsequent use).
+the session terminal (`ConversionStreamError.closed` on subsequent use).
+Stream-only failures use `ConversionStreamError`, so exhaustive switches over
+`ConversionError` keep compiling.
 Discard partial output after an error; applications should write to a temporary
 file and commit it only after successful completion.
 
@@ -49,7 +51,7 @@ lookahead from actual dictionary key lengths. It preserves normalization,
 mmseg segment boundaries and conversion-chain order, including arbitrarily long
 unmatched runs. All 14 existing option modes are supported. Future unsupported
 converter or segmenter implementations fail explicitly with
-`ConversionError.unsupportedStreamingConfiguration`. See
+`ConversionStreamError.unsupportedConfiguration`. See
 [streaming validation](docs/streaming.md) for the algorithm and regression cases.
 
 ## Upstream sync and maintenance

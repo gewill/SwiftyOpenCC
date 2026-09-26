@@ -56,6 +56,8 @@ across all 14 supported option modes, including the application's seven modes:
   unmatched bytes can interact across chunks but separate matched segments cannot.
 - Long unmatched/Chinese/IDS runs with bounded pending input.
 - Strict UTF-8 errors, truncated EOF, terminal state and native handle release.
+- Stream-only failures as `ConversionStreamError`, with an exhaustive switch that
+  keeps `ConversionError` source compatible.
 
 The existing ThreadSanitizer concurrency regression also creates independent
 sessions from a shared converter. `swift test --sanitize=address` covers the new

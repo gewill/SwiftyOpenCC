@@ -19,12 +19,6 @@ public enum ConversionError: Error {
     case invalidUTF8
     
     case unknown
-
-    /// The loaded converter uses a stage or segmenter without exact streaming support.
-    case unsupportedStreamingConfiguration
-
-    /// The stream has already finished or a previous append/finish failed.
-    case streamClosed
     
     init(_ code: CCErrorCode) {
         switch code {
@@ -36,10 +30,6 @@ public enum ConversionError: Error {
             self = .invalidTextDictionary
         case .invalidUTF8:
             self = .invalidUTF8
-        case .unsupportedStreamingConfiguration:
-            self = .unsupportedStreamingConfiguration
-        case .streamClosed:
-            self = .streamClosed
         case .unknown, _:
             self = .unknown
         }
