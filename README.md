@@ -54,6 +54,18 @@ converter or segmenter implementations fail explicitly with
 `ConversionStreamError.unsupportedConfiguration`. See
 [streaming validation](docs/streaming.md) for the algorithm and regression cases.
 
+### Cancellation
+
+OpenCC 1.4.2 cannot interrupt a conversion: its C and C++ APIs have no cancel,
+progress or deadline hook, and every native call runs to completion. Once
+`convert(_:)` starts, a caller can only discard its result.
+
+A stream can be abandoned between calls. Check for cancellation before each
+`append(_:)`, then release the session without calling `finish()`. This frees its
+native state and leaves the converter and other sessions unaffected. The call
+already running still completes, so cancellation takes effect within the time
+needed to convert one chunk; smaller chunks respond sooner.
+
 ## Upstream sync and maintenance
 
 This fork follows [`ddddxxx/SwiftyOpenCC`](https://github.com/ddddxxx/SwiftyOpenCC) wrapper commits and stable [`BYVoid/OpenCC`](https://github.com/BYVoid/OpenCC) releases. The coordinator lives in **OpenCCman/main**: it proposes a fork PR, then an **OpenCCman/build** revision-update PR after this fork's merge commit passes CI. Each PR is reviewed and merged by a maintainer.

@@ -283,4 +283,26 @@ final class StreamingTests: XCTestCase {
         }
         XCTAssertEqual(CCStreamGetLiveHandleCount(), initialStreams)
     }
+
+    func testAbandonedStreamReleasesNativeStateBetweenChunks() throws {
+        let converter = try ChineseConverter(options: [.traditionalize, .twStandard, .twIdiom])
+        let input = Data(String(repeating: "头发干杯，鼠标里面的硅二极管坏了。", count: 64).utf8)
+        let expected = Data(converter.convert(String(decoding: input, as: UTF8.self)).utf8)
+        let initialStreams = CCStreamGetLiveHandleCount()
+        let initialStrings = STLStringGetLiveHandleCount()
+        let survivor = try converter.makeStream()
+        var output = try survivor.append(input.prefix(1000))
+        var abandoned: ChineseConversionStream? = try converter.makeStream()
+        _ = try abandoned?.append(input.prefix(1001))
+        XCTAssertEqual(CCStreamGetLiveHandleCount(), initialStreams + 2)
+        // Cancel between chunks while phrases and a split scalar are pending.
+        XCTAssertGreaterThan(abandoned?.pendingByteCount ?? 0, 0)
+        abandoned = nil
+        XCTAssertEqual(CCStreamGetLiveHandleCount(), initialStreams + 1)
+        output.append(try survivor.append(input.dropFirst(1000)))
+        output.append(try survivor.finish())
+        XCTAssertEqual(output, expected)
+        XCTAssertEqual(converter.convert("头发"), "頭髮")
+        XCTAssertEqual(STLStringGetLiveHandleCount(), initialStrings)
+    }
 }
