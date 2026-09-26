@@ -42,6 +42,19 @@ it defeats bounded-memory file processing. A diagnostic pending-byte count in
 the internal bridge tests detects accidental accumulation of whole runs; it is
 not a process-memory measurement.
 
+## Cancellation
+
+OpenCC has no interruption interface. Neither the pinned 1.4.2 release nor
+upstream `master` at `528ae26` (2026-09-25) offers a cancel, progress or
+deadline hook, and no upstream issue proposes one. A native call runs to
+completion once started. A session is therefore the unit of cooperative
+cancellation: callers stop between `append` calls and release it without
+`finish()`, which frees its pending input and stages. A bridge handle must never
+be destroyed while a call on it is running, so destroying handles cannot emulate
+interruption; the Swift objects retain their handles for every call. Revisit
+this only if upstream adds an interruption API with documented thread and
+lifetime guarantees.
+
 ## Regression coverage
 
 `StreamingTests` differentially compares streamed bytes with the complete API
@@ -58,6 +71,9 @@ across all 14 supported option modes, including the application's seven modes:
 - Strict UTF-8 errors, truncated EOF, terminal state and native handle release.
 - Stream-only failures as `ConversionStreamError`, with an exhaustive switch that
   keeps `ConversionError` source compatible.
+- A session abandoned between chunks, with undecided phrases and a split scalar
+  pending, frees its native state while the converter and another session
+  continue unchanged.
 
 The existing ThreadSanitizer concurrency regression also creates independent
 sessions from a shared converter. `swift test --sanitize=address` covers the new
