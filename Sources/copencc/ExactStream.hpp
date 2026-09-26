@@ -28,6 +28,8 @@ public:
     explicit StablePrefixScanner(const opencc::DictPtr& dictionary)
         : matcher(dictionary), keyMaxLength(dictionary->KeyMaxLength()) {}
 
+    // Calls emit(unit, match) for each decided unit in order, then flush() once
+    // before the consumed bytes are compacted and the unit views expire.
     template <typename Emit, typename Flush>
     void Append(std::string_view bytes, bool finish, Emit emit, Flush flush) {
         if (!bytes.empty()) pending.append(bytes.data(), bytes.size());
@@ -37,7 +39,7 @@ public:
             const size_t remaining = pending.size() - offset;
             // Dictionary lengths are bytes. Cache once, not once per character.
             if (!finish && remaining < keyMaxLength) break;
-            const auto match = matcher.MatchPrefixView(cursor, remaining);
+            const opencc::PrefixMatchView match = matcher.MatchPrefixView(cursor, remaining);
             size_t length;
             if (match.matched) {
                 length = match.keyLength;
@@ -48,14 +50,23 @@ public:
                 if (!finish && opencc::UTF8Util::IsIncompleteIdeographicDescriptionSequencePrefix(cursor, remaining)) break;
                 length = opencc::UTF8Util::NextIdeographicDescriptionSequenceLength(cursor, remaining);
                 if (length == 0) length = opencc::UTF8Util::NextCharLength(cursor);
+            }
+            // Only a malformed dictionary can make a unit overrun the buffer, e.g.
+            // a value ending in a truncated scalar that feeds the next stage.
+            // Upstream clamps it at the end; mid-stream, wait for its bytes.
+            if (length > remaining) {
+                if (!finish) break;
+                length = remaining;
+            }
+            if (!match.matched) {
                 // Bulk skipping is safe only where no dictionary key can start;
                 // it also stops before an IDS operator, exactly as OpenCC does.
                 length += matcher.SkipUnmatchable(cursor + length, remaining - length);
             }
-            emit(std::string_view(cursor, length), match.matched);
+            emit(std::string_view(cursor, length), match);
             offset += length;
         }
-        flush(std::string_view(pending.data(), offset));
+        flush();
         // One compaction per append; erasing for every token would be quadratic.
         pending.erase(0, offset);
     }
@@ -70,23 +81,28 @@ private:
 
 class IncrementalConversion {
 public:
-    explicit IncrementalConversion(opencc::ConversionPtr conversion)
-        : conversion(std::move(conversion)), scanner(this->conversion->GetDict()) {}
+    explicit IncrementalConversion(const opencc::ConversionPtr& conversion)
+        : scanner(conversion->GetDict()) {}
 
     std::string Append(std::string_view input, bool finish) {
         std::string output;
-        // Find the stable, contiguous prefix first, then use the original
-        // conversion primitive once. Its matching and priority remain upstream.
-        scanner.Append(input, finish, [](std::string_view, bool) {}, [&](std::string_view prefix) {
-            conversion->AppendConverted(prefix, &output);
-        });
+        // The output loop of upstream Conversion::AppendConverted, driven by the
+        // units the scanner already decided with an upstream PrefixMatch over
+        // the same dictionary, so each byte is matched once rather than twice.
+        // That PrefixMatch keeps the tables or dictionary owning each value.
+        scanner.Append(input, finish, [&](std::string_view unit, const opencc::PrefixMatchView& match) {
+            if (match.matched) {
+                output.append(match.value.data(), match.value.size());
+            } else {
+                output.append(unit.data(), unit.size());
+            }
+        }, [] {});
         return output;
     }
 
     size_t PendingBytes() const { return scanner.PendingBytes(); }
 
 private:
-    opencc::ConversionPtr conversion;
     StablePrefixScanner scanner;
 };
 
@@ -115,8 +131,8 @@ public:
             runStart = nullptr;
             runLength = 0;
         };
-        scanner->Append(input, finish, [&](std::string_view unit, bool matched) {
-            if (matched) {
+        scanner->Append(input, finish, [&](std::string_view unit, const opencc::PrefixMatchView& match) {
+            if (match.matched) {
                 // An mmseg match terminates the preceding logical unmatched
                 // segment. Flush all chain stages BEFORE converting that match.
                 flushRun();
@@ -128,7 +144,7 @@ public:
                 if (!runStart) runStart = unit.data();
                 runLength += unit.size();
             }
-        }, [&](std::string_view) { flushRun(); });
+        }, flushRun);
         if (finish) output += AppendUnmatched({}, true);
         return output;
     }

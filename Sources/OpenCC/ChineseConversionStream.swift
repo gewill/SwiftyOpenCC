@@ -19,7 +19,7 @@ public final class ChineseConversionStream {
 
     /// Converts the stable prefix and returns its bytes; an empty result is valid.
     /// Throws `ConversionError.invalidUTF8` for malformed UTF-8, or
-    /// `ConversionError.streamClosed` after completion or a previous failure.
+    /// `ConversionStreamError.closed` after completion or a previous failure.
     public func append(_ utf8: Data) throws -> Data {
         var error = CCErrorCode.unknown
         let result = utf8.withUnsafeBytes { bytes -> STLString? in
@@ -39,7 +39,7 @@ public final class ChineseConversionStream {
     var pendingByteCount: Int { CCStreamGetPendingByteCount(stream) }
 
     private func consume(_ result: STLString?, error: CCErrorCode) throws -> Data {
-        guard let result = result else { throw ConversionError(error) }
+        guard let result = result else { throw streamError(error) }
         defer { STLStringDestroy(result) }
         return Data(bytes: STLStringGetUTF8String(result), count: STLStringGetLength(result))
     }

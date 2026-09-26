@@ -225,7 +225,7 @@ final class StreamingTests: XCTestCase {
                     guard case ConversionError.invalidUTF8 = error else { return XCTFail("Unexpected \(error), \(bytes)") }
                 }
                 XCTAssertThrowsError(try stream.append(Data())) { error in
-                    guard case ConversionError.streamClosed = error else { return XCTFail("Unexpected \(error)") }
+                    guard case ConversionStreamError.closed = error else { return XCTFail("Unexpected \(error)") }
                 }
             }
         }
@@ -240,8 +240,28 @@ final class StreamingTests: XCTestCase {
         XCTAssertEqual(try stream.append(Data()), Data())
         XCTAssertEqual(try stream.finish(), Data())
         XCTAssertThrowsError(try stream.finish()) { error in
-            guard case ConversionError.streamClosed = error else { return XCTFail("Unexpected \(error)") }
+            guard case ConversionStreamError.closed = error else { return XCTFail("Unexpected \(error)") }
         }
+    }
+
+    func testStreamFailuresLeaveConversionErrorUnchanged() {
+        guard case ConversionStreamError.unsupportedConfiguration = streamError(.unsupportedStreamingConfiguration),
+              case ConversionStreamError.closed = streamError(.streamClosed),
+              case ConversionError.invalidUTF8 = streamError(.invalidUTF8) else {
+            return XCTFail("Unexpected stream error mapping")
+        }
+        // Exhaustive without `default`, like client code: adding a case to the
+        // public enum must fail here instead of breaking clients' switches.
+        func name(_ error: ConversionError) -> String {
+            switch error {
+            case .fileNotFound: return "fileNotFound"
+            case .invalidFormat: return "invalidFormat"
+            case .invalidTextDictionary: return "invalidTextDictionary"
+            case .invalidUTF8: return "invalidUTF8"
+            case .unknown: return "unknown"
+            }
+        }
+        XCTAssertEqual(name(ConversionError(.streamClosed)), "unknown")
     }
 
     func testStreamOutlivesConverterAndReleasesHandles() throws {

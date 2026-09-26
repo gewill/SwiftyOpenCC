@@ -15,7 +15,10 @@ complete stable dictionary match or unmatched IDS/scalar. Upstream IDS helpers
 decide whether additional input is required, using their depth-16 and 64-scalar
 limits. No independent dictionary parser or matching policy is introduced.
 
-Stable conversion prefixes are passed to upstream `Conversion.AppendConverted`.
+Each conversion emits what upstream `Conversion::AppendConverted` would for those
+units: a match appends its dictionary value and any other unit is copied as is.
+The match comes from the scanner's own upstream `PrefixMatch`, so every byte is
+matched once instead of being rescanned by a second conversion pass.
 For mmseg, each dictionary match closes the preceding unmatched segment and is
 converted as its own segment. An unmatched run can continue indefinitely, so it
 is fed incrementally through every conversion in the chain; each conversion
@@ -28,6 +31,9 @@ UTF-8 is validated before upstream matching. Overlong forms, surrogates, invalid
 continuation bytes and scalars above U+10FFFF are rejected. At most three bytes
 of an incomplete scalar cross append calls. The session remains terminal after
 any error, so partial output must not be committed by a file caller.
+Dictionary output is not revalidated. If a malformed dictionary value ends in a
+truncated scalar, the unit reading it waits for more input mid-stream and is
+clamped at the end as upstream does, never reading past the buffered bytes.
 
 The retained undecided input depends on dictionary/IDS limits and the number of
 stages. Working allocations additionally depend on the largest caller chunk and
@@ -50,6 +56,8 @@ across all 14 supported option modes, including the application's seven modes:
   unmatched bytes can interact across chunks but separate matched segments cannot.
 - Long unmatched/Chinese/IDS runs with bounded pending input.
 - Strict UTF-8 errors, truncated EOF, terminal state and native handle release.
+- Stream-only failures as `ConversionStreamError`, with an exhaustive switch that
+  keeps `ConversionError` source compatible.
 
 The existing ThreadSanitizer concurrency regression also creates independent
 sessions from a shared converter. `swift test --sanitize=address` covers the new
