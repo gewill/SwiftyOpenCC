@@ -20,6 +20,38 @@ converter.convert("鼠标里面的硅二极管坏了，导致光标分辨率降�
 
 `ChineseConverter` remains immutable and supports concurrent conversion. All five public option bits and their existing precedence are preserved, including the four mixed character/idiom combinations without an exact official configuration. Conversion accepts embedded U+0000 without truncating the suffix. Native handles are released when the Swift object is deinitialized.
 
+### Incremental UTF-8 conversion
+
+Use an independent session for large files without retaining the complete input
+or output. Process returned bytes immediately, then write the final tail:
+
+```swift
+let stream = try converter.makeStream()
+while let chunk = try input.read(upToCount: 256 * 1024), !chunk.isEmpty {
+    try output.write(contentsOf: stream.append(chunk))
+}
+try output.write(contentsOf: stream.finish())
+```
+
+`input` and `output` are caller-owned `FileHandle` values. Serialize calls to each
+mutable `ChineseConversionStream`; independent sessions can run concurrently
+and may outlive their converter. The stream preserves embedded NUL, line endings
+and BOM, matching complete-string conversion. File applications that omit the
+leading BOM must strip it before appending. Chunk boundaries may split UTF-8
+scalars or phrases. Malformed UTF-8 throws `ConversionError.invalidUTF8`;
+`finish()` also rejects a truncated final scalar. Completion or any error makes
+the session terminal (`ConversionError.streamClosed` on subsequent use).
+Discard partial output after an error; applications should write to a temporary
+file and commit it only after successful completion.
+
+The bridge consumes complete dictionary/IDS match units, retaining bounded
+lookahead from actual dictionary key lengths. It preserves normalization,
+mmseg segment boundaries and conversion-chain order, including arbitrarily long
+unmatched runs. All 14 existing option modes are supported. Future unsupported
+converter or segmenter implementations fail explicitly with
+`ConversionError.unsupportedStreamingConfiguration`. See
+[streaming validation](docs/streaming.md) for the algorithm and regression cases.
+
 ## Upstream sync and maintenance
 
 This fork follows [`ddddxxx/SwiftyOpenCC`](https://github.com/ddddxxx/SwiftyOpenCC) wrapper commits and stable [`BYVoid/OpenCC`](https://github.com/BYVoid/OpenCC) releases. The coordinator lives in **OpenCCman/main**: it proposes a fork PR, then an **OpenCCman/build** revision-update PR after this fork's merge commit passes CI. Each PR is reviewed and merged by a maintainer.
