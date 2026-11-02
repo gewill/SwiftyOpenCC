@@ -60,7 +60,7 @@ Generation requires Python 3, a suitable macOS C++ toolchain and a little-endian
 
 The five public option bits retain their precedence: 32 combinations map to 14 effective modes. Ten use official configurations; four mixed Taiwan-idiom combinations use [Configuration/Compatibility](../Configuration/Compatibility). Those four source configurations belong to this fork and must not be replaced by upstream defaults. Dictionary changes may change output; explain actual changes in the PR instead of silently rewriting expectations. The [1.4.2 migration record](opencc-1.4.2-migration.md) documents supported modes, known output changes and measured performance tradeoffs.
 
-Tests load fixtures from the resource bundle without a source-tree fallback. Modes such as `tw2t`, which the existing public options cannot express, remain explicitly unsupported. Embedded U+0000, native handle release and concurrent conversion are part of the compatibility contract.
+Tests load fixtures from the resource bundle without a source-tree fallback. `ChineseConverter.Configuration` must list exactly the bundled official configurations; modes such as `tw2t`, which the options cannot express, are reachable only through it and must never be mapped to an option combination. Embedded U+0000, native handle release and concurrent conversion are part of the compatibility contract.
 
 [OpenCC Compatibility](../.github/workflows/ci.yml) runs for PRs to `master` and pushes to `master`, using these checks:
 

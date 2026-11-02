@@ -69,7 +69,16 @@ public class ChineseConverter {
     /// Unknown option bits are ignored. Traditional conversion takes precedence
     /// over simplification; Hong Kong takes precedence over Taiwan characters.
     public convenience init(options: Options) throws {
-        let name = options.configurationName
+        try self.init(bundledConfiguration: options.configurationName)
+    }
+
+    /// Creates a converter for an official OpenCC configuration, using the
+    /// same bundled dictionaries as `init(options:)`.
+    public convenience init(configuration: Configuration) throws {
+        try self.init(bundledConfiguration: configuration.rawValue)
+    }
+
+    private convenience init(bundledConfiguration name: String) throws {
         let folder = name.hasPrefix("legacy-") ? "Compatibility" : "Official"
         guard let url = Bundle.module.url(forResource: name, withExtension: "json",
                                           subdirectory: folder),

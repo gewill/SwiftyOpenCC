@@ -18,6 +18,20 @@ converter.convert("鼠标里面的硅二极管坏了，导致光标分辨率降�
 // 滑鼠裡面的矽二極體壞了，導致游標解析度降低。
 ```
 
+Every official OpenCC configuration is also available by name, including six
+that no option combination reaches (`s2hkp`, `hk2sp`, `tw2t`, `hk2t`, `t2jp`,
+`jp2t`):
+
+```swift
+let hongKong = try ChineseConverter(configuration: .s2hkp)
+hongKong.convert("鼠标里面的硅二极管坏了，导致光标分辨率降低。")
+// 滑鼠裏面的硅二極管壞了，導致游標分辨率降低。
+```
+
+`ChineseConverter.Configuration.allCases` lists the 16 bundled configurations.
+Each produces the same output as the OpenCC 1.4.2 command-line tool; see
+[official configurations](docs/official-configurations.md).
+
 `ChineseConverter` remains immutable and supports concurrent conversion. All five public option bits and their existing precedence are preserved, including the four mixed character/idiom combinations without an exact official configuration. Conversion accepts embedded U+0000 without truncating the suffix. Native handles are released when the Swift object is deinitialized.
 
 ### Incremental UTF-8 conversion
@@ -49,7 +63,7 @@ file and commit it only after successful completion.
 The bridge consumes complete dictionary/IDS match units, retaining bounded
 lookahead from actual dictionary key lengths. It preserves normalization,
 mmseg segment boundaries and conversion-chain order, including arbitrarily long
-unmatched runs. All 14 existing option modes are supported. Future unsupported
+unmatched runs. All 14 option modes and all 16 official configurations are supported. Future unsupported
 converter or segmenter implementations fail explicitly with
 `ConversionStreamError.unsupportedConfiguration`. See
 [streaming validation](docs/streaming.md) for the algorithm and regression cases.

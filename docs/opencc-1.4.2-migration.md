@@ -19,7 +19,7 @@ Ten effective modes use official JSON: `s2t`, `t2s`, `s2tw`, `s2hk`, `s2twp`, `t
 
 This updates dictionary and official configuration behavior, not just compiled code. Official normalization, regional phrase/variant protection, and dictionary corrections can change results. The fixed benchmark corpus below has different output SHA-256 hashes. Tests compare official modes with 495 expected outputs from the same upstream release, rather than requiring 1.2.0 output to remain unchanged.
 
-`tw2t` is not expressible by the existing options. The old test incorrectly mapped it to `.traditionalize`, which is `s2t`. Tests now classify the six unsupported official modes explicitly; no new public flag or app feature was added.
+`tw2t` is not expressible by the existing options. The old test incorrectly mapped it to `.traditionalize`, which is `s2t`. Tests now classify the six unsupported official modes explicitly; no new public flag or app feature was added. (These six were later exposed through `ChineseConverter.Configuration`; see [official configurations](official-configurations.md).)
 
 ## Ownership, concurrency and U+0000
 

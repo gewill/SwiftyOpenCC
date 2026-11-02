@@ -12,6 +12,16 @@ final class StreamingTests: XCTestCase {
         [.traditionalize, .hkStandard, .twIdiom], [.simplify, .twIdiom], [.simplify, .hkStandard, .twIdiom]
     ]
 
+    /// The 14 option modes plus each official configuration that no option
+    /// combination reaches.
+    private func converters() throws -> [ChineseConverter] {
+        let byOptions = try modes.map { try ChineseConverter(options: $0) }
+        let covered = Set(byOptions.map(\.configurationName))
+        return try byOptions + ChineseConverter.Configuration.allCases
+            .filter { !covered.contains($0.rawValue) }
+            .map { try ChineseConverter(configuration: $0) }
+    }
+
     private func streamed(_ data: Data, converter: ChineseConverter, chunkSize: Int) throws -> Data {
         let stream = try converter.makeStream()
         var output = Data()
@@ -27,8 +37,7 @@ final class StreamingTests: XCTestCase {
     func testEveryByteCutAcrossAllPublicModes() throws {
         let text = "头发干杯，鼠标里面的硅二极管坏了。軟體滑鼠裡面的矽二極體。\u{FEFF}\r\n👨‍👩‍👧‍👦e\u{301}\0神⿰木发\0\r\n"
         let bytes = Data(text.utf8)
-        for options in modes {
-            let converter = try ChineseConverter(options: options)
+        for converter in try converters() {
             let expected = Data(converter.convert(text).utf8)
             for split in 0...bytes.count {
                 let stream = try converter.makeStream()
@@ -51,8 +60,7 @@ final class StreamingTests: XCTestCase {
         // Joined input adds phrase interactions across fixture boundaries as well
         // as exercising every bundled configuration and normalization stage.
         let text = fixtures.cases.map(\.input).joined(separator: "\r\n")
-        for options in modes {
-            let converter = try ChineseConverter(options: options)
+        for converter in try converters() {
             let expected = Data(converter.convert(text).utf8)
             for size in [1, 13, 256, 1024] {
                 XCTAssertEqual(try streamed(Data(text.utf8), converter: converter, chunkSize: size), expected,
@@ -62,8 +70,7 @@ final class StreamingTests: XCTestCase {
     }
 
     func testEveryPartitionOfPhraseRegression() throws {
-        for options in modes {
-            let converter = try ChineseConverter(options: options)
+        for converter in try converters() {
             for text in ["头发", "干杯"] {
                 let bytes = Data(text.utf8)
                 let expected = Data(converter.convert(text).utf8)
@@ -92,8 +99,7 @@ final class StreamingTests: XCTestCase {
                          "理髮", "頭髮", "神", "⿰木", "发", "⿾", "𠀀", "e\u{301}", "\0", "\r\n", "\u{FEFF}", "👩🏽‍💻", "a"]
         let text = (0..<2048).map { _ in fragments[next() % fragments.count] }.joined()
         let input = Data(text.utf8)
-        for options in modes {
-            let converter = try ChineseConverter(options: options)
+        for converter in try converters() {
             let stream = try converter.makeStream()
             var output = Data()
             var offset = 0
@@ -177,8 +183,7 @@ final class StreamingTests: XCTestCase {
             "⿲" + tree(3) + tree(3) + "发",
             String(repeating: "⿰", count: 64) + String(repeating: "发", count: 65)
         ]
-        for options in modes {
-            let converter = try ChineseConverter(options: options)
+        for converter in try converters() {
             for fixture in fixtures {
                 let input = fixture + "头发\0" + fixture + "干杯"
                 for chunk in [1, 5, 17, 63, 64, 65, 256] {
@@ -190,8 +195,7 @@ final class StreamingTests: XCTestCase {
     }
 
     func testBoundedPendingForLongUnmatchedAndChineseRuns() throws {
-        for options in modes {
-            let converter = try ChineseConverter(options: options)
+        for converter in try converters() {
             for unit in ["a", "发", "⿾"] {
                 let chunk = Data(String(repeating: unit, count: 8192).utf8)
                 let stream = try converter.makeStream()

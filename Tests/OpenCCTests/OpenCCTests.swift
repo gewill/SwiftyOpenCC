@@ -23,24 +23,46 @@ final class OpenCCTests: XCTestCase {
     func testOfficialConversionFixtures() throws {
         let url = try XCTUnwrap(Bundle.module.url(forResource: "testcases", withExtension: "json", subdirectory: "testcases"))
         let fixtures = try JSONDecoder().decode(Fixtures.self, from: Data(contentsOf: url))
-        let converters = try officialOptions.mapValues { try ChineseConverter(options: $0) }
-        // These official modes cannot be expressed by the existing public Options.
-        // In particular, tw2t must never be mislabeled as .traditionalize (s2t).
-        let unsupported: Set<String> = ["hk2t", "tw2t", "jp2t", "t2jp", "s2hkp", "hk2sp"]
+        let byOptions = try officialOptions.mapValues { try ChineseConverter(options: $0) }
+        let byConfiguration = try Dictionary(uniqueKeysWithValues: ChineseConverter.Configuration.allCases.map {
+            ($0.rawValue, try ChineseConverter(configuration: $0))
+        })
         var coverage: [String: Int] = [:]
         for fixture in fixtures.cases {
             for (mode, expected) in fixture.expected {
-                guard let converter = converters[mode] else {
-                    XCTAssertTrue(unsupported.contains(mode), "Unclassified upstream fixture mode: \(mode)")
-                    continue
-                }
+                let converter = try XCTUnwrap(byConfiguration[mode], "Unclassified upstream fixture mode: \(mode)")
                 XCTAssertEqual(converter.convert(fixture.input), expected, "\(fixture.id): \(mode)")
+                if let options = byOptions[mode] {
+                    XCTAssertEqual(options.convert(fixture.input), expected, "\(fixture.id): \(mode) via Options")
+                }
                 coverage[mode, default: 0] += 1
             }
         }
-        XCTAssertEqual(Set(coverage.keys), Set(officialOptions.keys), "Every supported official mode needs fixtures")
+        XCTAssertEqual(Set(coverage.keys), Set(byConfiguration.keys), "Every official configuration needs fixtures")
         XCTAssertGreaterThan(coverage.values.reduce(0, +), 100)
         print("Official fixture coverage: \(coverage.sorted { $0.key < $1.key })")
+    }
+
+    func testConfigurationsMatchBundledOfficialInventory() throws {
+        // Bundle.module here is the test bundle; read the package's resource folder.
+        let folder = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../Sources/OpenCC/Resources/Official").standardized
+        let bundled = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+            .filter { $0.hasSuffix(".json") }.map { String($0.dropLast(5)) }
+        XCTAssertEqual(Set(ChineseConverter.Configuration.allCases.map(\.rawValue)), Set(bundled))
+        XCTAssertEqual(ChineseConverter.Configuration.allCases.count, 16)
+        for configuration in ChineseConverter.Configuration.allCases {
+            XCTAssertEqual(try ChineseConverter(configuration: configuration).configurationName, configuration.rawValue)
+        }
+        // Options keep their mapping; the six new cases are reachable only by Configuration.
+        for (name, options) in officialOptions {
+            XCTAssertEqual(options.configurationName, name)
+        }
+        XCTAssertEqual(Set(ChineseConverter.Configuration.allCases.map(\.rawValue)).subtracting(officialOptions.keys),
+                       ["s2hkp", "hk2sp", "tw2t", "hk2t", "t2jp", "jp2t"])
+        // Distinct from s2t (着裏線為僞黃體藝術), per the OpenCC 1.4.2 CLI.
+        XCTAssertEqual(try ChineseConverter(configuration: .tw2t).convert("着裏線為僞黄體藝術"), "着裏線爲僞黄體藝術")
+        XCTAssertEqual(try ChineseConverter(configuration: .t2jp).convert("着裏線為僞黄體藝術"), "着裏線為偽黄体芸術")
     }
 
     func testAllOptionCombinationsAndPrecedence() throws {
